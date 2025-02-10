@@ -5,13 +5,11 @@ import com.cabservice.megacitycabservice.model.User;
 import com.cabservice.megacitycabservice.util.PasswordUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.UUID;
 
 @WebServlet("/UserLogin")
 public class UserLogin extends HttpServlet {
@@ -27,18 +25,26 @@ public class UserLogin extends HttpServlet {
             user = userDAO.getUserByEmail(email);
 
             if (user != null && PasswordUtil.checkPassword(password, user.getPassword())) {
-                HttpSession session = request.getSession();
+                HttpSession session = request.getSession(true);
+                String sessionId = UUID.randomUUID().toString();
+
+                // Store session data
+                session.setAttribute("sessionId", sessionId);
                 session.setAttribute("userId", user.getId());
                 session.setAttribute("userName", user.getName());
                 session.setAttribute("userEmail", user.getEmail());
                 session.setAttribute("role", user.getRole());
-                session.setMaxInactiveInterval(30 * 60); // Session expires after 30 minutes
+                session.setMaxInactiveInterval(30 * 60);
 
-                // Redirect to the appropriate dashboard based on user role
-                String dashboardURL = getDashboardURL(user.getRole());
-                response.sendRedirect(dashboardURL);
+                Cookie sessionCookie = new Cookie("sessionId", sessionId);
+                sessionCookie.setHttpOnly(true);
+                sessionCookie.setSecure(false);
+                sessionCookie.setPath("/");
+                sessionCookie.setMaxAge(30 * 60);
+                response.addCookie(sessionCookie);
+
+                response.sendRedirect(getDashboardURL(user.getRole()));
             } else {
-                // Handle invalid credentials
                 request.setAttribute("errorMessage", "Invalid email or password.");
                 request.getRequestDispatcher("auth/login.jsp").forward(request, response);
             }
@@ -51,14 +57,10 @@ public class UserLogin extends HttpServlet {
 
     private String getDashboardURL(String role) {
         switch (role) {
-            case "admin":
-                return "admin/dashboard.jsp";
-            case "manager":
-                return "manager/dashboard.jsp";
-            case "customer":
-                return "customer/dashboard.jsp";
-            default:
-                return "auth/login.jsp";
+            case "admin": return "admin/dashboard.jsp";
+            case "manager": return "manager/dashboard.jsp";
+            case "customer": return "customer/dashboard.jsp";
+            default: return "auth/login.jsp";
         }
     }
 }

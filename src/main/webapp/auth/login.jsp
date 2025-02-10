@@ -80,6 +80,41 @@
         lucide.createIcons();
     };
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+<script>
+    window.onload = function () {
+        lucide.createIcons();
+
+        var toastMessage = '<%= session.getAttribute("toastMessage") != null ? session.getAttribute("toastMessage") : "" %>';
+        var toastType = '<%= session.getAttribute("toastType") != null ? session.getAttribute("toastType") : "" %>';
+        var redirectURL = '<%= session.getAttribute("redirectURL") != null ? session.getAttribute("redirectURL") : "" %>';
+
+        if (toastMessage !== "") {
+            Toastify({
+                text: toastMessage,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: toastType === "success" ? "green" : "red",
+                stopOnFocus: true
+            }).showToast();
+
+            if (toastType === "success" && redirectURL !== "") {
+                setTimeout(function () {
+                    window.location.href = redirectURL;
+                }, 3500);
+            }
+
+            <% session.removeAttribute("toastMessage"); %>
+            <% session.removeAttribute("toastType"); %>
+            <% session.removeAttribute("redirectURL"); %>
+        }
+    };
+</script>
 </body>
 </html>
 
