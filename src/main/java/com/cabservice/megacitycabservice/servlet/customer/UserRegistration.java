@@ -11,14 +11,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.io.Serial;
 import java.sql.SQLException;
 
-//@WebServlet("/register")
+@WebServlet("/customer/UserRegistration")
 public class UserRegistration extends HttpServlet {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -28,8 +24,10 @@ public class UserRegistration extends HttpServlet {
         String contactNo = request.getParameter("phone_number");
         String address = request.getParameter("address");
 
+        // Hash the password
         String hashedPassword = PasswordUtil.hashPassword(password);
 
+        // Create User and Customer objects
         User user = new User(null, name, email, hashedPassword, "customer");
         Customer customer = new Customer(null, address, contactNo);
 
@@ -39,11 +37,11 @@ public class UserRegistration extends HttpServlet {
             if (isRegistered) {
                 request.getSession().setAttribute("toastMessage", "Registration successful!");
                 request.getSession().setAttribute("toastType", "success");
-                response.sendRedirect("auth/login.jsp");
+                response.sendRedirect(request.getContextPath() + "/auth/login.jsp");
             } else {
                 request.getSession().setAttribute("toastMessage", "Registration failed. Please try again.");
                 request.getSession().setAttribute("toastType", "error");
-                response.sendRedirect("auth/register.jsp");
+                response.sendRedirect(request.getContextPath() + "/customer/customerRegister.jsp");
             }
         } catch (SQLException e) {
             String errorMsg = e.getMessage();
@@ -55,7 +53,8 @@ public class UserRegistration extends HttpServlet {
                 request.getSession().setAttribute("toastMessage", "Server error, please try again later.");
             }
             request.getSession().setAttribute("toastType", "error");
-            response.sendRedirect("auth/register.jsp");
+            // Redirect back to the registration page
+            response.sendRedirect(request.getContextPath() + "/customer/customerRegister.jsp");
         }
     }
 }

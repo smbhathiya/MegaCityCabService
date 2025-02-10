@@ -28,16 +28,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
         .background {
-            /*background-image: url('../assets/cab2.webp');*/
             background-size: cover;
             background-position: center;
             position: absolute;
             inset: 0;
             width: 100%;
-        }
-        /* Password confirmation check icon styles */
-        .password-match {
-            position: relative;
         }
         .password-match .check-icon {
             position: absolute;
@@ -77,7 +72,7 @@
 <div class="flex items-center justify-center min-h-screen px-4 pt-24">
     <div class="bg-black/50 p-8 rounded-lg shadow-lg border border-white/10 w-full max-w-2xl relative z-10">
         <h2 class="text-3xl font-bold text-center mb-6">Register</h2>
-        <form action="customer/UserRegistration" method="post">
+        <form action="${pageContext.request.contextPath}/customer/UserRegistration" method="post">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Form Fields -->
                 <div>
@@ -125,6 +120,7 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
 <script>
     window.onload = function() {
         lucide.createIcons();
@@ -137,7 +133,7 @@
                 text: toastMessage,
                 duration: 3000,
                 close: true,
-                gravity: "bottom",
+                gravity: "top",
                 position: "right",
                 backgroundColor: toastType === "success" ? "green" : "red",
                 stopOnFocus: true
@@ -145,7 +141,7 @@
 
             if (toastType === "success") {
                 setTimeout(function() {
-                    window.location.href = "auth/login.jsp";
+                    window.location.href = "${pageContext.request.contextPath}/auth/login.jsp";
                 }, 3500);
             }
 
@@ -176,4 +172,3 @@
 </script>
 </body>
 </html>
-
