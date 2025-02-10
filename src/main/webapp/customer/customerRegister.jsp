@@ -77,7 +77,7 @@
 <div class="flex items-center justify-center min-h-screen px-4 pt-24">
     <div class="bg-black/50 p-8 rounded-lg shadow-lg border border-white/10 w-full max-w-2xl relative z-10">
         <h2 class="text-3xl font-bold text-center mb-6">Register</h2>
-        <form action="/MegaCityCabServiceApp/userRegistration" method="post">
+        <form action="customer/UserRegistration" method="post">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Form Fields -->
                 <div>
