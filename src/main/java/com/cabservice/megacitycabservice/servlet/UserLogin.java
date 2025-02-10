@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 
-@WebServlet("/login")
+@WebServlet("/UserLogin")
 public class UserLogin extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -52,13 +52,13 @@ public class UserLogin extends HttpServlet {
     private String getDashboardURL(String role) {
         switch (role) {
             case "admin":
-                return "/admin/dashboard.jsp";
+                return "admin/dashboard.jsp";
             case "manager":
-                return "/manager/dashboard.jsp";
+                return "manager/dashboard.jsp";
             case "customer":
-                return "/customer/dashboard.jsp";
+                return "customer/dashboard.jsp";
             default:
-                return "/auth/login.jsp";
+                return "auth/login.jsp";
         }
     }
 }

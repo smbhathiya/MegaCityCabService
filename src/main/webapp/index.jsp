@@ -142,7 +142,7 @@
   <section class="container mx-auto px-4 py-16">
     <div class="grid md:grid-cols-2 gap-12 items-center ">
       <div>
-        <img src="assets/cab1.webp" alt="Luxury Car Interior" class="w-3/4 rounded-lg shadow-xl p-5 items-center">
+        <img src="assests/cab1.webp" alt="Luxury Car Interior" class="w-3/4 rounded-lg shadow-xl p-5 items-center">
       </div>
       <div>
         <h2 class="text-3xl font-bold mb-8 text-white">Why Choose Mega City Cabs</h2>
@@ -165,7 +165,7 @@
           </div>
           <% } %>
         </div>
-        <a href="/auth/register" class="mt-8 inline-block px-6 py-3 bg-primary text-black rounded-md hover:bg-primary-700 transition">
+        <a href="customer/customerRegister.jsp" class="mt-8 inline-block px-6 py-3 bg-primary text-black rounded-md hover:bg-primary-700 transition">
           Join Now
         </a>
       </div>
