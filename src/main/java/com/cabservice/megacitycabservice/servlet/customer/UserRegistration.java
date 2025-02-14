@@ -28,7 +28,7 @@ public class UserRegistration extends HttpServlet {
         String hashedPassword = PasswordUtil.hashPassword(password);
 
         // Create User and Customer objects
-        User user = new User(null, name, email, hashedPassword, "customer");
+        User user = new User(null, name, email, hashedPassword, "customer", true);
         Customer customer = new Customer(null, address, contactNo);
 
         UserDao userDAO = new UserDao();

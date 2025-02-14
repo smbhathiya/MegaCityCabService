@@ -8,20 +8,23 @@ public class User {
     private String email;
     private String password;
     private String role;
+    private boolean isEnabled; // New field
 
     public User() {
         this.name = name;
         this.email = email;
         this.password = password;
         this.role = role;
+        this.isEnabled = true; // Default to enabled
     }
 
-    public User(UUID id, String name, String email, String password, String role) {
+    public User(UUID id, String name, String email, String password, String role, boolean isEnabled) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.password = password;
         this.role = role;
+        this.isEnabled = isEnabled;
     }
 
     public UUID getId() {
@@ -63,5 +66,12 @@ public class User {
     public void setRole(String role) {
         this.role = role;
     }
-}
 
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+
+    public void setEnabled(boolean isEnabled) {
+        this.isEnabled = isEnabled;
+    }
+}
