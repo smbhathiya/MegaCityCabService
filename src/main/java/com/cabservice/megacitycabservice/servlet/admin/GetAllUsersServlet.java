@@ -2,7 +2,6 @@ package com.cabservice.megacitycabservice.servlet.admin;
 
 import com.cabservice.megacitycabservice.dao.UserDao;
 import com.cabservice.megacitycabservice.model.User;
-
 import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;

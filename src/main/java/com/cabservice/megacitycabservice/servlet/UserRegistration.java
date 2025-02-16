@@ -1,4 +1,4 @@
-package com.cabservice.megacitycabservice.servlet.customer;
+package com.cabservice.megacitycabservice.servlet;
 
 import com.cabservice.megacitycabservice.dao.UserDao;
 import com.cabservice.megacitycabservice.model.Customer;
@@ -33,7 +33,7 @@ public class UserRegistration extends HttpServlet {
 
         UserDao userDAO = new UserDao();
         try {
-            boolean isRegistered = userDAO.registerUserAndCustomer(user, customer);
+            boolean isRegistered = userDAO.registerCustomer(user, customer);
             if (isRegistered) {
                 request.getSession().setAttribute("toastMessage", "Registration successful!");
                 request.getSession().setAttribute("toastType", "success");

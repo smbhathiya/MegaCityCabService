@@ -13,7 +13,8 @@ public class Driver {
     private String updatedAt;
 
     // Constructors
-    public Driver() {}
+    public Driver(Object o, Object object, String licenseNumber, String available, String string, String s) {
+    }
 
     public Driver(UUID id, UUID userId, UUID carId, String licenseNumber, String availabilityStatus, double rating, String createdAt, String updatedAt) {
         this.id = id;

@@ -2,12 +2,12 @@ package com.cabservice.megacitycabservice.servlet;
 
 import com.cabservice.megacitycabservice.dao.CarDAO;
 import com.cabservice.megacitycabservice.model.Car;
+import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import com.google.gson.Gson;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,8 +19,8 @@ import java.util.UUID;
 
 @WebServlet("/admin/cars")
 public class CarServlet extends HttpServlet {
-    private CarDAO carDAO;
     private final Gson gson = new Gson();
+    private CarDAO carDAO;
 
     @Override
     public void init() throws ServletException {

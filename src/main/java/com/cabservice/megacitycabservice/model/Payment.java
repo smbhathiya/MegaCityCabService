@@ -16,7 +16,8 @@ public class Payment {
     private String updatedAt;
 
     // Constructors
-    public Payment() {}
+    public Payment() {
+    }
 
     public Payment(UUID id, UUID bookingId, UUID customerId, BigDecimal amount, String paymentMethod, String transactionId, String status, String paymentDate, String createdAt, String updatedAt) {
         this.id = id;

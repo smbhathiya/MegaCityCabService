@@ -4,20 +4,22 @@ import com.cabservice.megacitycabservice.model.Customer;
 import com.cabservice.megacitycabservice.model.User;
 import com.cabservice.megacitycabservice.util.DBUtil;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public class UserDao {
 
-    // Helper method for obtaining a connection
     private Connection getConnection() throws SQLException {
         return DBUtil.getConnection();
     }
 
     // customer user registration
-    public boolean registerUserAndCustomer(User user, Customer customer) throws SQLException {
+    public boolean registerCustomer(User user, Customer customer) throws SQLException {
         boolean success = false;
         UUID userId = UUID.randomUUID();
         UUID customerId = UUID.randomUUID();
@@ -58,48 +60,6 @@ public class UserDao {
 
         } catch (SQLException e) {
             throw new SQLException("Error registering user and customer: " + e.getMessage(), e);
-        }
-        return success;
-    }
-
-    // Register admin user
-    public boolean registerAdmin(User user) throws SQLException {
-        boolean success = false;
-        String checkAdminSql = "SELECT 1 FROM users WHERE role = 'admin' LIMIT 1";
-        String checkEmailSql = "SELECT 1 FROM users WHERE email = ? LIMIT 1";
-        String insertUserSql = "INSERT INTO users (id, name, email, password, role, isEnabled) VALUES (?, ?, ?, ?, ?, ?)";
-
-        try (Connection conn = getConnection();
-             PreparedStatement checkAdminStmt = conn.prepareStatement(checkAdminSql);
-             PreparedStatement checkEmailStmt = conn.prepareStatement(checkEmailSql)) {
-
-            // Check if admin already exists
-            ResultSet rs = checkAdminStmt.executeQuery();
-            if (rs.next()) {
-                throw new SQLException("AdminExists");
-            }
-
-            // Check if email is already taken
-            checkEmailStmt.setString(1, user.getEmail());
-            rs = checkEmailStmt.executeQuery();
-            if (rs.next()) {
-                throw new SQLException("EmailTaken");
-            }
-
-            // Insert admin user
-            try (PreparedStatement stmt = conn.prepareStatement(insertUserSql)) {
-                UUID userId = UUID.randomUUID();
-                stmt.setString(1, userId.toString());
-                stmt.setString(2, user.getName());
-                stmt.setString(3, user.getEmail());
-                stmt.setString(4, user.getPassword());
-                stmt.setString(5, "admin");
-                stmt.setBoolean(6, true);
-
-                success = stmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            throw new SQLException("Error registering admin: " + e.getMessage(), e);
         }
         return success;
     }

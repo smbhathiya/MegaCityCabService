@@ -15,7 +15,8 @@ public class Car {
     private String updatedAt;
 
     // Constructors
-    public Car() {}
+    public Car() {
+    }
 
     public Car(UUID id, String plateNumber, String model, String brand, int year, String color, int capacity, String status, String createdAt, String updatedAt) {
         this.id = id;

@@ -22,7 +22,8 @@ public class Booking {
     private String updatedAt;
 
     // Constructors
-    public Booking() {}
+    public Booking() {
+    }
 
     public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, BigDecimal distance, int duration, String bookingStatus, BigDecimal fareEstimate, BigDecimal totalFare, String paymentStatus, String hireDate, String createdAt, String updatedAt) {
         this.id = id;
