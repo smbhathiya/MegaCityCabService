@@ -2,14 +2,14 @@
 <%@ page import="jakarta.servlet.http.HttpSession" %>
 <html>
 <head>
-  <title>Dashboard</title>
+    <title>Dashboard</title>
 </head>
 <body>
 
 <h2>Welcome to Dashboard</h2>
 
 <form action="${pageContext.request.contextPath}/Logout" method="get">
-  <button type="submit">Logout</button>
+    <button type="submit">Logout</button>
 </form>
 
 </body>

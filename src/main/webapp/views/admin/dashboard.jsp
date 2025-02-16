@@ -237,8 +237,8 @@
 
         fetch('${pageContext.request.contextPath}/UpdateUserStatus', {  // Add the context path
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, isEnabled })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({userId, isEnabled})
         }).then(response => {
             if (response.ok) {
                 statusText.textContent = isEnabled ? 'Enabled' : 'Disabled';

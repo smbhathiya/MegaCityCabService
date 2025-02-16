@@ -34,6 +34,7 @@
             inset: 0;
             width: 100%;
         }
+
         .password-match .check-icon {
             position: absolute;
             right: 10px;
@@ -42,6 +43,7 @@
             display: none;
             color: green;
         }
+
         .password-match.match .check-icon {
             display: inline-block;
         }
@@ -59,7 +61,8 @@
                 </a>
             </div>
             <div class="flex items-center gap-4">
-                <a href="${pageContext.request.contextPath}/views/auth/login.jsp" class="px-4 py-2 bg-primary text-black rounded-lg flex items-center gap-2  transition font-semibold">
+                <a href="${pageContext.request.contextPath}/views/auth/login.jsp"
+                   class="px-4 py-2 bg-primary text-black rounded-lg flex items-center gap-2  transition font-semibold">
                     <i data-lucide="log-in" class="w-5 h-5"></i>
                     Login
                 </a>
@@ -113,7 +116,8 @@
             </button>
         </form>
         <p class="mt-4 text-center text-gray-400">
-            Already have an account? <a href="${pageContext.request.contextPath}/views/auth/login.jsp" class="text-primary hover:underline font-medium">Login here</a>
+            Already have an account? <a href="${pageContext.request.contextPath}/views/auth/login.jsp"
+                                        class="text-primary hover:underline font-medium">Login here</a>
         </p>
     </div>
 </div>
@@ -122,7 +126,7 @@
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 <script>
-    window.onload = function() {
+    window.onload = function () {
         lucide.createIcons();
 
         var toastMessage = '<%= session.getAttribute("toastMessage") != null ? session.getAttribute("toastMessage") : "" %>';
@@ -140,7 +144,7 @@
             }).showToast();
 
             if (toastType === "success") {
-                setTimeout(function() {
+                setTimeout(function () {
                     window.location.href = "../auth/login.jsp";
                 }, 3500);
             }
@@ -153,7 +157,7 @@
 
 <!-- Password Confirmation Check Script -->
 <script>
-    document.getElementById('confirm_password').addEventListener('input', function() {
+    document.getElementById('confirm_password').addEventListener('input', function () {
         var password = document.getElementById('password').value;
         var confirmPassword = document.getElementById('confirm_password').value;
         var confirmPasswordField = document.getElementById('confirm_password');
