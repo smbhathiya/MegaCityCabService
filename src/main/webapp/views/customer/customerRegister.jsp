@@ -59,7 +59,7 @@
                 </a>
             </div>
             <div class="flex items-center gap-4">
-                <a href="${pageContext.request.contextPath}/auth/login.jsp" class="px-4 py-2 bg-primary text-black rounded-lg flex items-center gap-2  transition font-semibold">
+                <a href="${pageContext.request.contextPath}/views/auth/login.jsp" class="px-4 py-2 bg-primary text-black rounded-lg flex items-center gap-2  transition font-semibold">
                     <i data-lucide="log-in" class="w-5 h-5"></i>
                     Login
                 </a>
@@ -113,7 +113,7 @@
             </button>
         </form>
         <p class="mt-4 text-center text-gray-400">
-            Already have an account? <a href="${pageContext.request.contextPath}/auth/login.jsp" class="text-primary hover:underline font-medium">Login here</a>
+            Already have an account? <a href="${pageContext.request.contextPath}/views/auth/login.jsp" class="text-primary hover:underline font-medium">Login here</a>
         </p>
     </div>
 </div>
@@ -141,7 +141,7 @@
 
             if (toastType === "success") {
                 setTimeout(function() {
-                    window.location.href = "${pageContext.request.contextPath}/auth/login.jsp";
+                    window.location.href = "../auth/login.jsp";
                 }, 3500);
             }
 

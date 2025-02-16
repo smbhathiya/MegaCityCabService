@@ -45,7 +45,7 @@
             </div>
 
             <div class="flex items-center gap-2 sm:gap-4">
-                <a href="${pageContext.request.contextPath}/customer/customerRegister.jsp" class="px-3 sm:px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition flex items-center gap-2 text-sm sm:text-base">
+                <a href="${pageContext.request.contextPath}/views/customer/customerRegister.jsp" class="px-3 sm:px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition flex items-center gap-2 text-sm sm:text-base">
                     <i data-lucide="user-plus" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                     Register
                 </a>
@@ -69,7 +69,7 @@
             <button type="submit" class="w-full bg-primary text-black py-2 rounded-md hover:bg-primary-700 transition text-sm sm:text-base">Login</button>
         </form>
         <p class="mt-3 sm:mt-4 text-center text-gray-400 text-xs sm:text-sm">
-            Don't have an account? <a href="${pageContext.request.contextPath}/customer/customerRegister.jsp" class="text-primary hover:underline">Register here</a>
+            Don't have an account? <a href="${pageContext.request.contextPath}/views/customer/customerRegister.jsp" class="text-primary hover:underline">Register here</a>
         </p>
     </div>
 </div>

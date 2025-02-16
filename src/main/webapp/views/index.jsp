@@ -62,11 +62,11 @@
           Mega City Cabs
         </div>
         <div class="flex items-center gap-4">
-          <a href="customer/customerRegister.jsp" class="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition flex items-center gap-2">
+          <a href="${pageContext.request.contextPath}/views/customer/customerRegister.jsp" class="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition flex items-center gap-2">
             <i data-lucide="user-plus" class="w-5 h-5"></i>
             Register
           </a>
-          <a href="auth/login.jsp" class="px-4 py-2 bg-primary text-black rounded-md flex items-center gap-2 hover:bg-primary-700 transition">
+          <a href="${pageContext.request.contextPath}/views/auth/login.jsp" class="px-4 py-2 bg-primary text-black rounded-md flex items-center gap-2 hover:bg-primary-700 transition">
             <i data-lucide="log-in" class="w-5 h-5"></i>
             Login
           </a>

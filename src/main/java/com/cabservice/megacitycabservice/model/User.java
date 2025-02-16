@@ -10,14 +10,6 @@ public class User {
     private String role;
     private boolean isEnabled; // New field
 
-    public User() {
-        this.name = name;
-        this.email = email;
-        this.password = password;
-        this.role = role;
-        this.isEnabled = true; // Default to enabled
-    }
-
     public User(UUID id, String name, String email, String password, String role, boolean isEnabled) {
         this.id = id;
         this.name = name;
