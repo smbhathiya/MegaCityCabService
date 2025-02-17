@@ -62,7 +62,6 @@ public class UserDAO {
         return users;
     }
 
-
     // Search users by name
     public List<User> searchUsersByName(String name) {
         List<User> users = new ArrayList<>();

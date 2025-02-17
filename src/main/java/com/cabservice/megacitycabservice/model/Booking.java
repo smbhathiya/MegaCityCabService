@@ -1,6 +1,7 @@
 package com.cabservice.megacitycabservice.model;
 
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.util.UUID;
 
 public class Booking {
@@ -22,7 +23,7 @@ public class Booking {
     private String updatedAt;
 
     // Constructors
-    public Booking() {
+    public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, double distance, int duration, double fareEstimate, double totalFare, Date hireDate, String bookingStatus, String paymentStatus, String createdAt) {
     }
 
     public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, BigDecimal distance, int duration, String bookingStatus, BigDecimal fareEstimate, BigDecimal totalFare, String paymentStatus, String hireDate, String createdAt, String updatedAt) {
@@ -42,6 +43,25 @@ public class Booking {
         this.hireDate = hireDate;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, double distance, int duration, double fareEstimate, double totalFare, Date hireDate, String bookingStatus, String paymentStatus) {
+        this.id = id;
+        this.bookingNumber = bookingNumber;
+        this.customerId = customerId;
+        this.driverId = driverId;
+        this.carId = carId;
+        this.pickupLocation = pickupLocation;
+        this.dropoffLocation = dropoffLocation;
+        this.distance = BigDecimal.valueOf(distance);
+        this.duration = duration;
+        this.fareEstimate = BigDecimal.valueOf(fareEstimate);
+        this.totalFare = BigDecimal.valueOf(totalFare);
+        this.hireDate = hireDate.toString();
+        this.bookingStatus = bookingStatus;
+        this.paymentStatus = paymentStatus;
+
+
     }
 
     // Getters and Setters

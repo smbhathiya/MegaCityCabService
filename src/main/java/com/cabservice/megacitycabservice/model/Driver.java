@@ -12,10 +12,7 @@ public class Driver {
     private String createdAt;
     private String updatedAt;
 
-    // Constructors
-    public Driver(Object o, Object object, String licenseNumber, String available, String string, String s) {
-    }
-
+    // Constructor with correct parameters
     public Driver(UUID id, UUID userId, UUID carId, String licenseNumber, String availabilityStatus, double rating, String createdAt, String updatedAt) {
         this.id = id;
         this.userId = userId;
