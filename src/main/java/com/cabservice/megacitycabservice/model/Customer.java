@@ -9,17 +9,21 @@ public class Customer {
     private String contactNo;
     private String createdAt;
     private String updatedAt;
+    private String name;
+    private String email;
+    private boolean isEnabled;
 
-    // Constructors
-    public Customer(Object o, String address, String contactNo) {}
 
-    public Customer(UUID id, UUID userId, String address, String contactNo, String createdAt, String updatedAt) {
+    public Customer(UUID id, UUID userId, String address, String contactNo, String createdAt, String updatedAt, String name,String email,boolean isEnabled) {
         this.id = id;
         this.userId = userId;
         this.address = address;
         this.contactNo = contactNo;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.name = name;
+        this.email = email;
+        this.isEnabled = isEnabled;
     }
 
     // Getters and Setters
@@ -69,5 +73,29 @@ public class Customer {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        isEnabled = enabled;
     }
 }
