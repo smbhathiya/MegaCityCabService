@@ -2,7 +2,6 @@ package com.cabservice.megacitycabservice.servlet;
 
 import com.cabservice.megacitycabservice.dao.UserDAO;
 import com.cabservice.megacitycabservice.model.User;
-import com.cabservice.megacitycabservice.model.UserDetails;
 import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -54,7 +53,7 @@ public class UserServlet extends HttpServlet {
 
     // get all users
     private void getAllUsers(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        List<UserDetails> users = userDAO.getAllUsers();
+        List<User> users = userDAO.getAllUsers();
         response.getWriter().write(gson.toJson(users));
     }
 

@@ -1,9 +1,6 @@
 package com.cabservice.megacitycabservice.dao;
 
 import com.cabservice.megacitycabservice.model.User;
-import com.cabservice.megacitycabservice.model.UserDetails;
-import com.cabservice.megacitycabservice.util.DBUtil;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +36,8 @@ public class UserDAO {
     }
 
     // Get all users
-    public List<UserDetails> getAllUsers() {
-        List<UserDetails> users = new ArrayList<>();
+    public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM users";
 
         try (Connection conn = getConnection();
@@ -48,7 +45,7 @@ public class UserDAO {
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                UserDetails user = new UserDetails(
+                User user = new User(
                         UUID.fromString(rs.getString("id")),
                         rs.getString("name"),
                         rs.getString("email"),

@@ -8,16 +8,31 @@ public class User {
     private String email;
     private String password;
     private String role;
-    private boolean isEnabled; // New field
+    private boolean isEnabled;
+    private  String createdAt;
+    private String updatedAt;
 
-    public User(UUID id, String name, String email, String password, String role, boolean isEnabled) {
+    public User(UUID id, String name, String email, String password, String role, boolean isEnabled, String createdAt, String updatedAt) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.password = password;
         this.role = role;
         this.isEnabled = isEnabled;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
+
+    public User(UUID id, String name, String email, String role, boolean isEnabled, String createdAt, String updatedAt) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.role = role;
+        this.isEnabled = isEnabled;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
 
     public UUID getId() {
         return id;
@@ -65,5 +80,21 @@ public class User {
 
     public void setEnabled(boolean isEnabled) {
         this.isEnabled = isEnabled;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(String updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
