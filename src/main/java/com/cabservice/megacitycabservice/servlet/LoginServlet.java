@@ -82,7 +82,8 @@ public class LoginServlet extends HttpServlet {
             response.setContentType("application/json");
             response.getWriter().write("{\"status\":\"success\",\"role\":\"" + user.getRole() + "\",\"message\":\"Login successful.\"}");
         } else {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.setContentType("application/json");
             response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid email or password.\"}");
         }
