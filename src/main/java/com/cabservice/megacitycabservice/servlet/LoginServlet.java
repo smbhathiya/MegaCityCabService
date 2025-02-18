@@ -1,6 +1,5 @@
 package com.cabservice.megacitycabservice.servlet;
 
-import com.cabservice.megacitycabservice.dao.DriverDAO;
 import com.cabservice.megacitycabservice.dao.UserDAO;
 import com.cabservice.megacitycabservice.model.User;
 import com.cabservice.megacitycabservice.util.PasswordUtil;
@@ -30,10 +29,8 @@ public class LoginServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(LoginServlet.class);
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-
         BufferedReader reader = request.getReader();
         Map<String, String> requestData = gson.fromJson(reader, Map.class);
-
 
         String email = requestData.get("email");
         String password = requestData.get("password");
@@ -42,7 +39,7 @@ public class LoginServlet extends HttpServlet {
         if (email == null || email.trim().isEmpty() || password == null || password.trim().isEmpty()) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Email and password are required.\"}");
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Email and password are required.\"}");
             return;
         }
 
@@ -52,7 +49,11 @@ public class LoginServlet extends HttpServlet {
         try {
             user = userDAO.getUserByEmail(email);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            logger.error("Database error while fetching user", e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"An internal server error occurred.\"}");
+            return;
         }
 
         if (user != null && PasswordUtil.checkPassword(password, user.getPassword())) {
@@ -79,11 +80,11 @@ public class LoginServlet extends HttpServlet {
             response.addCookie(sessionCookie);
 
             response.setContentType("application/json");
-            response.getWriter().write("{\"role\":\"" + user.getRole() + "\"}");
+            response.getWriter().write("{\"status\":\"success\",\"role\":\"" + user.getRole() + "\",\"message\":\"Login successful.\"}");
         } else {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Invalid email or password.\"}");
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid email or password.\"}");
         }
     }
 }

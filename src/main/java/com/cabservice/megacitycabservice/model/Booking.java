@@ -1,70 +1,30 @@
 package com.cabservice.megacitycabservice.model;
 
-import java.math.BigDecimal;
-import java.sql.Date;
+import java.util.Date;
 import java.util.UUID;
 
 public class Booking {
+
     private UUID id;
     private String bookingNumber;
     private UUID customerId;
     private UUID driverId;
     private UUID carId;
     private String pickupLocation;
-    private String dropoffLocation;
-    private BigDecimal distance;
+    private String dropOffLocation;
+    private double distance;
     private int duration;
-    private String bookingStatus;
-    private BigDecimal fareEstimate;
-    private BigDecimal totalFare;
-    private String paymentStatus;
+    private double fareEstimate;
+    private double totalFare;
     private String hireDate;
-    private String createdAt;
-    private String updatedAt;
-
-    // Constructors
-    public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, double distance, int duration, double fareEstimate, double totalFare, Date hireDate, String bookingStatus, String paymentStatus, String createdAt) {
-    }
-
-    public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, BigDecimal distance, int duration, String bookingStatus, BigDecimal fareEstimate, BigDecimal totalFare, String paymentStatus, String hireDate, String createdAt, String updatedAt) {
-        this.id = id;
-        this.bookingNumber = bookingNumber;
-        this.customerId = customerId;
-        this.driverId = driverId;
-        this.carId = carId;
-        this.pickupLocation = pickupLocation;
-        this.dropoffLocation = dropoffLocation;
-        this.distance = distance;
-        this.duration = duration;
-        this.bookingStatus = bookingStatus;
-        this.fareEstimate = fareEstimate;
-        this.totalFare = totalFare;
-        this.paymentStatus = paymentStatus;
-        this.hireDate = hireDate;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
-
-    public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, double distance, int duration, double fareEstimate, double totalFare, Date hireDate, String bookingStatus, String paymentStatus) {
-        this.id = id;
-        this.bookingNumber = bookingNumber;
-        this.customerId = customerId;
-        this.driverId = driverId;
-        this.carId = carId;
-        this.pickupLocation = pickupLocation;
-        this.dropoffLocation = dropoffLocation;
-        this.distance = BigDecimal.valueOf(distance);
-        this.duration = duration;
-        this.fareEstimate = BigDecimal.valueOf(fareEstimate);
-        this.totalFare = BigDecimal.valueOf(totalFare);
-        this.hireDate = hireDate.toString();
-        this.bookingStatus = bookingStatus;
-        this.paymentStatus = paymentStatus;
-
-
-    }
+    private String bookingStatus;
+    private String paymentStatus;
+    private Date createdAt;
+    private Date updatedAt;
+    private String hireTime;
 
     // Getters and Setters
+
     public UUID getId() {
         return id;
     }
@@ -113,19 +73,19 @@ public class Booking {
         this.pickupLocation = pickupLocation;
     }
 
-    public String getDropoffLocation() {
-        return dropoffLocation;
+    public String getDropOffLocation() {
+        return dropOffLocation;
     }
 
-    public void setDropoffLocation(String dropoffLocation) {
-        this.dropoffLocation = dropoffLocation;
+    public void setDropOffLocation(String dropOffLocation) {
+        this.dropOffLocation = dropOffLocation;
     }
 
-    public BigDecimal getDistance() {
+    public double getDistance() {
         return distance;
     }
 
-    public void setDistance(BigDecimal distance) {
+    public void setDistance(double distance) {
         this.distance = distance;
     }
 
@@ -137,36 +97,20 @@ public class Booking {
         this.duration = duration;
     }
 
-    public String getBookingStatus() {
-        return bookingStatus;
-    }
-
-    public void setBookingStatus(String bookingStatus) {
-        this.bookingStatus = bookingStatus;
-    }
-
-    public BigDecimal getFareEstimate() {
+    public double getFareEstimate() {
         return fareEstimate;
     }
 
-    public void setFareEstimate(BigDecimal fareEstimate) {
+    public void setFareEstimate(double fareEstimate) {
         this.fareEstimate = fareEstimate;
     }
 
-    public BigDecimal getTotalFare() {
+    public double getTotalFare() {
         return totalFare;
     }
 
-    public void setTotalFare(BigDecimal totalFare) {
+    public void setTotalFare(double totalFare) {
         this.totalFare = totalFare;
-    }
-
-    public String getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public void setPaymentStatus(String paymentStatus) {
-        this.paymentStatus = paymentStatus;
     }
 
     public String getHireDate() {
@@ -177,19 +121,43 @@ public class Booking {
         this.hireDate = hireDate;
     }
 
-    public String getCreatedAt() {
+    public String getBookingStatus() {
+        return bookingStatus;
+    }
+
+    public void setBookingStatus(String bookingStatus) {
+        this.bookingStatus = bookingStatus;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public Date getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(String createdAt) {
+    public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
 
-    public String getUpdatedAt() {
+    public Date getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(String updatedAt) {
+    public void setUpdatedAt(Date updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getHireTime() {
+        return hireTime;
+    }
+
+    public void setHireTime(String hireTime) {
+        this.hireTime = hireTime;
     }
 }

@@ -23,9 +23,78 @@
             }
         };
     </script>
+    <script>
+        function loginUser(event) {
+            event.preventDefault();
+
+            let email = document.getElementById("email").value;
+            let password = document.getElementById("password").value;
+
+            fetch("${pageContext.request.contextPath}/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("API Response:", data);
+
+                    if (data.status === "success") {
+                        document.cookie = "role=" + data.role + "; path=/";
+
+                        Toastify({
+                            text: data.message,
+                            duration: 3000,
+                            close: true,
+                            gravity: "top",
+                            position: "right",
+                            style: { background: "green" },
+                            stopOnFocus: true
+                        }).showToast();
+
+
+                        let redirectURL = "";
+                        if (data.role === "admin") {
+                            redirectURL = "../admin/dashboard.jsp";
+                        } else if (data.role === "driver") {
+                            redirectURL = "../driver/dashboard.jsp";
+                        } else if (data.role === "customer") {
+                            redirectURL = "../customer/dashboard.jsp";
+                        } else {
+                            redirectURL = "../index.jsp";
+                        }
+
+                        setTimeout(() => window.location.href = redirectURL, 3000);
+                    } else {
+                        Toastify({
+                            text: "Login Failed: " + data.message,
+                            duration: 3000,
+                            close: true,
+                            gravity: "top",
+                            position: "right",
+                            style: { background: "red" },
+                            stopOnFocus: true
+                        }).showToast();
+                    }
+                })
+                .catch(error => {
+                    console.error("Fetch Error:", error);
+                    Toastify({
+                        text: "Something went wrong.",
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        style: { background: "red" },
+                        stopOnFocus: true
+                    }).showToast();
+                });
+
+
+        }
+    </script>
     <style>
         .background {
-            /*background-image: url('../assets/cab2.webp');*/
             background-size: cover;
             background-position: center;
             height: 100vh;
@@ -34,7 +103,7 @@
 </head>
 <body class="bg-dark text-white background backdrop-blur-xl">
 <!-- Navbar -->
-<nav class="fixed top-0 left-0 right-0 ">
+<nav class="fixed top-0 left-0 right-0">
     <div class="container mx-auto px-4 sm:px-6 py-2">
         <div class="flex h-16 items-center justify-between">
             <div class="flex items-center gap-2">
@@ -58,7 +127,7 @@
 <div class="min-h-screen flex items-center justify-center px-4">
     <div class="bg-dark/50 p-6 sm:p-8 rounded-lg border border-white/10 w-11/12 sm:w-full max-w-md">
         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">Login</h2>
-        <form action="${pageContext.request.contextPath}/UserLogin" method="post">
+        <form onsubmit="loginUser(event)">
             <div class="mb-4">
                 <label for="email" class="block text-sm font-medium mb-1 sm:mb-2">Email</label>
                 <input type="email" id="email" name="email"
@@ -117,13 +186,14 @@
                     window.location.href = redirectURL;
                 }, 3500);
             }
-
-            <% session.removeAttribute("toastMessage"); %>
-            <% session.removeAttribute("toastType"); %>
-            <% session.removeAttribute("redirectURL"); %>
         }
+
+        <%
+            session.removeAttribute("toastMessage");
+            session.removeAttribute("toastType");
+            session.removeAttribute("redirectURL");
+        %>
     };
 </script>
 </body>
 </html>
-

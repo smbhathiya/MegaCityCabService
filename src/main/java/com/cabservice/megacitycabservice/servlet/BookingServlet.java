@@ -11,6 +11,7 @@ import jakarta.servlet.http.*;
 import java.io.*;
 import java.sql.Date;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.UUID;
 
 @WebServlet("/booking")
@@ -107,30 +108,40 @@ public class BookingServlet extends HttpServlet {
         }
     }
 
-
-    // Get booking details by booking number (unchanged)
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    // Get a booking by booking ID
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        String bookingNumber = request.getParameter("booking_number");
-
-        if (bookingNumber == null) {
-            response.getWriter().write("{\"status\": \"error\", \"message\": \"Booking number is required.\"}");
-            return;
-        }
+        String bookingId = request.getParameter("booking_id");
+        String customerId = request.getParameter("customer_id");
+        String driverId = request.getParameter("driver_id");
 
         try {
             BookingDAO bookingDAO = new BookingDAO();
-            Booking booking = bookingDAO.getBookingByBookingNumber(bookingNumber);
+            List<Booking> bookings = null;
 
-            if (booking != null) {
-                response.getWriter().write(gson.toJson(booking));
+            if (bookingId != null) {
+                bookings = List.of(bookingDAO.getBookingById(bookingId));
+            } else if (customerId != null) {
+                bookings = bookingDAO.getBookingsByCustomerId(customerId);
+            } else if (driverId != null) {
+                bookings = bookingDAO.getBookingsByDriverId(driverId);
             } else {
-                response.getWriter().write("{\"status\": \"error\", \"message\": \"Booking not found.\"}");
+                bookings = bookingDAO.getAllBookings();
+            }
+
+            if (bookings != null && !bookings.isEmpty()) {
+                response.getWriter().write(gson.toJson(bookings));
+            } else {
+                response.getWriter().write("{\"status\": \"error\", \"message\": \"No bookings found.\"}");
             }
         } catch (SQLException e) {
-            response.getWriter().write("{\"status\": \"error\", \"message\": \"Error retrieving booking.\"}");
+            response.getWriter().write("{\"status\": \"error\", \"message\": \"Error retrieving booking: " + e.getMessage() + "\"}");
+        } catch (Exception e) {
+            response.getWriter().write("{\"status\": \"error\", \"message\": \"Unexpected error: " + e.getMessage() + "\"}");
         }
     }
 }
+

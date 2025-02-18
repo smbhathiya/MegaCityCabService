@@ -26,7 +26,7 @@ public class UserDAO {
                         rs.getString("email"),
                         rs.getString("password"),
                         rs.getString("role"),
-                        rs.getBoolean("isEnabled"),
+                        rs.getBoolean("is_enabled"),
                         rs.getString("created_at"),
                         rs.getString("updated_at")
                 );
