@@ -58,8 +58,8 @@ public class CustomerDAO {
                 return new Customer(
                         UUID.fromString(rs.getString("id")),
                         UUID.fromString(rs.getString("user_id")),
-                        rs.getString("contact_no"),
                         rs.getString("address"),
+                        rs.getString("contact_no"),
                         rs.getString("created_at"),
                         rs.getString("updated_at"),
                         rs.getString("name"),

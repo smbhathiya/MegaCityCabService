@@ -17,7 +17,8 @@
                             100: 'rgba(252, 198, 3, 0.2)',
                             700: '#CC9F02'
                         },
-                        dark: '#000000'
+                        dark: '#1A1A1A',
+                        light: '#F5F5F5'
                     }
                 }
             }
@@ -40,7 +41,6 @@
                     console.log("API Response:", data);
 
                     if (data.status === "success") {
-                        document.cookie = "role=" + data.role + "; path=/";
 
                         Toastify({
                             text: data.message,
@@ -64,7 +64,7 @@
                             redirectURL = "../index.jsp";
                         }
 
-                        setTimeout(() => window.location.href = redirectURL, 3000);
+                        setTimeout(() => window.location.href = redirectURL, 1000);
                     } else {
                         Toastify({
                             text: "Login Failed: " + data.message,
