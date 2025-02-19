@@ -18,7 +18,8 @@
                             100: 'rgba(252, 198, 3, 0.2)',
                             700: '#CC9F02'
                         },
-                        dark: '#000000'
+                        dark: '#1A1A1A',
+                        light: '#F5F5F5'
                     }
                 }
             }
@@ -49,9 +50,9 @@
         }
     </style>
 </head>
-<body class="bg-dark text-white background backdrop-blur-xl relative">
+<body class="bg-dark text-white min-h-screen flex flex-col">
 <!-- Navbar -->
-<nav class="fixed top-0 left-0 right-0 z-50">
+<nav class=" top-0 left-0 right-0  bg-dark">
     <div class="container mx-auto px-6 py-3">
         <div class="flex h-16 items-center justify-between">
             <div class="flex items-center gap-2">
@@ -62,7 +63,7 @@
             </div>
             <div class="flex items-center gap-4">
                 <a href="${pageContext.request.contextPath}/views/auth/login.jsp"
-                   class="px-4 py-2 bg-primary text-black rounded-lg flex items-center gap-2  transition font-semibold">
+                   class="px-4 py-2 bg-primary text-black rounded-lg flex items-center gap-2 transition font-semibold">
                     <i data-lucide="log-in" class="w-5 h-5"></i>
                     Login
                 </a>
@@ -72,46 +73,46 @@
 </nav>
 
 <!-- Registration Form -->
-<div class="flex items-center justify-center min-h-screen px-4 pt-24">
-    <div class="bg-black/50 p-8 rounded-lg shadow-lg border border-white/10 w-full max-w-2xl relative z-10">
-        <h2 class="text-3xl font-bold text-center mb-6">Register</h2>
-        <form action="${pageContext.request.contextPath}/customer/UserRegistration" method="post">
+<div class="flex-1 flex items-center justify-center px-4">
+    <div class="bg-dark/50 p-8 rounded-lg shadow-lg border border-white/10 w-full max-w-2xl relative z-10 mb-8">
+        <h2 class="text-3xl font-bold text-center mb-6">Registration</h2>
+        <form id="registrationForm" onsubmit="handleRegistration(event)">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Form Fields -->
                 <div>
                     <label for="name" class="block text-sm font-medium mb-2">Full Name</label>
                     <input type="text" id="name" name="name" required
-                           class="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
+                           class="w-full px-3 py-2 bg-dark/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
                 </div>
                 <div>
                     <label for="email" class="block text-sm font-medium mb-2">Email</label>
                     <input type="email" id="email" name="email" required
-                           class="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
+                           class="w-full px-3 py-2 bg-dark/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
                 </div>
                 <div>
                     <label for="password" class="block text-sm font-medium mb-2">Password</label>
                     <input type="password" id="password" name="password" required
-                           class="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
+                           class="w-full px-3 py-2 bg-dark/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
                 </div>
                 <div class="password-match">
                     <label for="confirm_password" class="block text-sm font-medium mb-2">Confirm Password</label>
                     <input type="password" id="confirm_password" name="confirm_password" required
-                           class="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
+                           class="w-full px-3 py-2 bg-dark/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
                     <i id="check-icon" class="check-icon lucide lucide-check-circle"></i>
                 </div>
                 <div>
                     <label for="phone_number" class="block text-sm font-medium mb-2">Phone Number</label>
                     <input type="text" id="phone_number" name="phone_number" required
-                           class="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
+                           class="w-full px-3 py-2 bg-dark/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
                 </div>
                 <div class="md:col-span-2">
                     <label for="address" class="block text-sm font-medium mb-2">Address</label>
                     <input type="text" id="address" name="address" required
-                           class="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
+                           class="w-full px-3 py-2 bg-dark/30 border border-white/20 rounded-md text-white placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none">
                 </div>
             </div>
             <button type="submit"
-                    class="w-full mt-6 bg-primary text-black py-3 rounded-md font-semibold hover:bg-primary-700 transition">
+                    class="w-full mt-6 bg-primary text-dark py-3 rounded-md font-semibold hover:bg-primary-700 transition">
                 Register
             </button>
         </form>
@@ -121,7 +122,28 @@
         </p>
     </div>
 </div>
-
+<!-- Footer -->
+<footer class="bg-dark/50 py-12 border-t border-white/10">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-bold text-white mb-2">Mega City Cabs</h3>
+                <p class="text-gray-400">© <%= java.time.Year.now().getValue() %> All rights reserved</p>
+            </div>
+            <div class="flex gap-4 mt-4 md:mt-0">
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="twitter" class="w-6 h-6"></i>
+                </a>
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="linkedin" class="w-6 h-6"></i>
+                </a>
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="github" class="w-6 h-6"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -154,11 +176,69 @@
             <% session.removeAttribute("toastType"); %>
         }
     };
-</script>
 
+    function handleRegistration(event) {
+        event.preventDefault();
 
-<!-- Password Confirmation Check Script -->
-<script>
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            is_enabled: true,
+            contact_no: document.getElementById('phone_number').value,
+            address: document.getElementById('address').value,
+            password: document.getElementById('password').value,
+        };
+
+        fetch('${pageContext.request.contextPath}/customer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    Toastify({
+                        text: "Registration successful",
+                        duration: 1500,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "green",
+                        stopOnFocus: true
+                    }).showToast();
+
+                    setTimeout(() => {
+                        window.location.href = "../auth/login.jsp";
+                    }, 3500);
+                } else {
+                    Toastify({
+                        text: data.message || "Registration failed!",
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        backgroundColor: "red",
+                        stopOnFocus: true
+                    }).showToast();
+                }
+            })
+                .catch(error => {
+                console.error('Error:', error);
+                Toastify({
+                    text: "An error occurred. Please try again.",
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: "red",
+                    stopOnFocus: true
+                }).showToast();
+            });
+    }
+
+    // Password Confirmation Check Script
     document.getElementById('confirm_password').addEventListener('input', function () {
         var password = document.getElementById('password').value;
         var confirmPassword = document.getElementById('confirm_password').value;

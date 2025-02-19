@@ -79,7 +79,7 @@ public class CustomerServlet extends HttpServlet {
 
         try {
             CustomerDAO customerDAO = new CustomerDAO();
-            boolean isAdded = customerDAO.addCustomer(name, email, isEnabled, contactNo, address,passwordHash);
+            boolean isAdded = customerDAO.addCustomer(name, email, isEnabled, contactNo, address, passwordHash);
 
             if (isAdded) {
                 response.getWriter().write("{\"status\": \"success\", \"message\": \"Customer added successfully!\"}");
@@ -87,9 +87,24 @@ public class CustomerServlet extends HttpServlet {
                 response.getWriter().write("{\"status\": \"error\", \"message\": \"Failed to add customer.\"}");
             }
         } catch (SQLException e) {
-            response.getWriter().write("{\"status\": \"error\", \"message\": \"Error adding customer: " + e.getMessage() + "\"}");
+            String errorMessage = e.getMessage();
+
+            if (errorMessage.contains("Duplicate entry")) {
+                if (errorMessage.contains("customers.contact_no")) {
+                    errorMessage = "This phone number is already registered.";
+                } else if (errorMessage.contains("users.email")) {
+                    errorMessage = "This email is already registered.";
+                } else {
+                    errorMessage = "Duplicate entry found.";
+                }
+            } else {
+                errorMessage = "An unexpected error occurred. Please try again.";
+            }
+
+            response.getWriter().write("{\"status\": \"error\", \"message\": \"" + errorMessage + "\"}");
             e.printStackTrace();
         }
+
     }
 
 

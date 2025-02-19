@@ -101,15 +101,15 @@
         }
     </style>
 </head>
-<body class="bg-dark text-white background backdrop-blur-xl">
+<body class="bg-dark text-white min-h-screen flex flex-col">
 <!-- Navbar -->
-<nav class="fixed top-0 left-0 right-0">
+<nav class=" top-0 left-0 right-0  bg-dark">
     <div class="container mx-auto px-4 sm:px-6 py-2">
         <div class="flex h-16 items-center justify-between">
             <div class="flex items-center gap-2">
                 <a href="../index.jsp" class="flex items-center gap-2">
                     <i data-lucide="car" class="w-6 h-6 sm:w-8 sm:h-8 text-primary"></i>
-                    <span class="text-xl sm:text-2xl font-bold text-white">Mega City Cabs</span>
+                    <span class="text-xl sm:text-2xl font-bold text-white">Login</span>
                 </a>
             </div>
 
@@ -124,7 +124,8 @@
     </div>
 </nav>
 
-<div class="min-h-screen flex items-center justify-center px-4">
+<!-- Main Content -->
+<div class="flex-1 flex items-center justify-center px-4">
     <div class="bg-dark/50 p-6 sm:p-8 rounded-lg border border-white/10 w-11/12 sm:w-full max-w-md">
         <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center">Login</h2>
         <form onsubmit="loginUser(event)">
@@ -152,6 +153,30 @@
     </div>
 </div>
 
+<!-- Footer -->
+<footer class="bg-dark/50 py-6 border-t border-white/10 flex-shrink-0">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-bold text-white mb-2">Mega City Cabs</h3>
+                <p class="text-gray-400">© <%= java.time.Year.now().getValue() %> All rights reserved</p>
+            </div>
+            <div class="flex gap-4 mt-4 md:mt-0">
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="twitter" class="w-6 h-6"></i>
+                </a>
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="linkedin" class="w-6 h-6"></i>
+                </a>
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="github" class="w-6 h-6"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>
     window.onload = function () {
@@ -170,23 +195,24 @@
         var toastType = '<%= session.getAttribute("toastType") != null ? session.getAttribute("toastType") : "" %>';
         var redirectURL = '<%= session.getAttribute("redirectURL") != null ? session.getAttribute("redirectURL") : "" %>';
 
-        if (toastMessage !== "") {
+        if (toastMessage.trim() !== "") {
             Toastify({
                 text: toastMessage,
                 duration: 3000,
                 close: true,
                 gravity: "top",
                 position: "right",
-                backgroundColor: toastType === "success" ? "green" : "red",
+                backgroundColor: toastType.trim().toLowerCase() === "success" ? "green" : "red",
                 stopOnFocus: true
             }).showToast();
 
-            if (toastType === "success" && redirectURL !== "") {
+            if (toastType.trim().toLowerCase() === "success" && redirectURL.trim() !== "") {
                 setTimeout(function () {
                     window.location.href = redirectURL;
                 }, 3500);
             }
         }
+
 
         <%
             session.removeAttribute("toastMessage");
