@@ -155,14 +155,11 @@
         </div>
         <%
         } else {
-        %>
-        <div class="text-light mt-16 mb-24">
-            <div>Please log in to access the dashboard</div>
-            <div class="flex ">
-                <a href="../auth/login.jsp" class="bg-white text-dark text-dark px-2 pr-2 p-1 rounded-md hover:bg-white/50 transition justify-center items-center mt-2">Login</a>
-            </div>
-        </div>
-        <%
+            Object userIdObj = session.getAttribute("userId");
+            if (userIdObj == null || !(userIdObj instanceof UUID)) {
+                response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+                return;
+            }
             }
         %>
     </div>
@@ -206,6 +203,19 @@
     </div>
 </div>
 
+
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-dark p-4 rounded-lg">
+        <h3 class="text-lg font-bold text-white">Confirm Logout</h3>
+        <p class="text-gray-300">Are you sure you want to logout?</p>
+        <div class="mt-4">
+            <button onclick="confirmLogout()" class="bg-primary text-dark px-4 py-2 rounded-md hover:bg-primary-700">Yes</button>
+            <button onclick="cancelLogout()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500 ml-2">No</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // Initialize Lucide Icons
     lucide.createIcons();
@@ -216,6 +226,53 @@
 
     function showLogoutModal() {
         // Implement logout modal logic
+    }
+    // Function to show logout confirmation modal
+    function showLogoutModal() {
+        document.getElementById('logoutModal').classList.remove('hidden');
+    }
+
+    // Function to hide logout confirmation modal
+    function cancelLogout() {
+        document.getElementById('logoutModal').classList.add('hidden');
+    }
+
+    // Function to confirm logout and perform the action
+    function confirmLogout() {
+        fetch('${pageContext.request.contextPath}/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    window.location.href = "../index.jsp";
+                } else {
+                    Toastify({
+                        text: "Logout failed: " + data.message,
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        style: { background: "red" },
+                        stopOnFocus: true
+                    }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Toastify({
+                    text: 'An unexpected error occurred during logout.',
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "red" },
+                    stopOnFocus: true
+                }).showToast();
+            });
     }
 
     function openSupportModal() {

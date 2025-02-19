@@ -103,16 +103,12 @@
         </form>
     </div>
     <%
-    } else {
-    %>
-
-    <div class="text-light mt-16">
-        <div>Please login to update your profile.</div>
-        <div class="flex ">
-            <a href="../auth/login.jsp" class="bg-white text-dark text-dark px-2 pr-2 p-1 rounded-md hover:bg-white/50 transition justify-center items-center mt-2">Login</a>
-        </div>
-    </div>
-    <%
+        } else {
+            Object userIdObj = session.getAttribute("userId");
+            if (userIdObj == null || !(userIdObj instanceof UUID)) {
+                response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+                return;
+            }
         }
     %>
 </div>
@@ -139,6 +135,18 @@
         </div>
     </div>
 </footer>
+
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-dark p-4 rounded-lg">
+        <h3 class="text-lg font-bold text-white">Confirm Logout</h3>
+        <p class="text-gray-300">Are you sure you want to logout?</p>
+        <div class="mt-4">
+            <button onclick="confirmLogout()" class="bg-primary text-dark px-4 py-2 rounded-md hover:bg-primary-700">Yes</button>
+            <button onclick="cancelLogout()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500 ml-2">No</button>
+        </div>
+    </div>
+</div>
 
 <script>
     // Initialize Lucide Icons

@@ -122,6 +122,7 @@
     </div>
 </div>
 
+
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
@@ -154,6 +155,7 @@
         }
     };
 </script>
+
 
 <!-- Password Confirmation Check Script -->
 <script>
