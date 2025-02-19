@@ -1,3 +1,4 @@
+<%@ page import="java.util.UUID" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="en">
@@ -65,6 +66,11 @@
                     Mega City Cabs
                 </div>
                 <div class="flex items-center gap-4">
+                    <%
+                        Object userIdObj = session.getAttribute("userId");
+                        String role = (String) session.getAttribute("userRole");
+                        if (userIdObj == null || !(userIdObj instanceof UUID)) {
+                    %>
                     <a href="${pageContext.request.contextPath}/views/customer/customerRegister.jsp"
                        class="px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition flex items-center gap-2">
                         <i data-lucide="user-plus" class="w-5 h-5"></i>
@@ -75,10 +81,34 @@
                         <i data-lucide="log-in" class="w-5 h-5"></i>
                         Login
                     </a>
+                    <%
+                    } else {
+                        String userId = userIdObj.toString();
+                        String dashboardUrl;
+                        if ("admin".equals(role)) {
+                            dashboardUrl = "/views/admin/dashboard.jsp";
+                        } else if ("driver".equals(role)) {
+                            dashboardUrl = "/views/driver/dashboard.jsp";
+                        } else {
+                            dashboardUrl = "/views/customer/dashboard.jsp";
+                        }
+                    %>
+                    <a href="${pageContext.request.contextPath}<%= dashboardUrl %>"
+                       class="px-4 py-2 bg-primary text-black rounded-md flex items-center gap-2 hover:bg-primary-700 transition">
+                        <i data-lucide="grid" class="w-5 h-5"></i>
+                        Go to Dashboard
+                    </a>
+                    <%
+                        }
+                    %>
                 </div>
             </div>
         </div>
     </nav>
+
+
+
+
 
     <!-- Hero Section -->
     <section class="relative hero-background flex items-center ">
