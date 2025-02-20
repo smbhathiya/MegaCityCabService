@@ -11,8 +11,10 @@ public class Driver {
     private double rating;
     private String createdAt;
     private String updatedAt;
+    private String name;  // Added from users table
+    private String email; // Added from users table
 
-    // Constructor with correct parameters
+    // Constructor
     public Driver(UUID id, UUID userId, UUID carId, String licenseNumber, String availabilityStatus, double rating, String createdAt, String updatedAt) {
         this.id = id;
         this.userId = userId;
@@ -87,5 +89,21 @@ public class Driver {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

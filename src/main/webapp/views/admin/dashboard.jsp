@@ -90,7 +90,7 @@
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <a href="../index.jsp" class="flex items-center gap-3">
-                    <i data-lucide="settings" class="w-10 h-10 text-primary"></i>
+                    <i data-lucide="car" class="w-10 h-10 text-primary animate-pulse-slow"></i>
                     <div>
                         <span class="text-3xl font-bold text-light tracking-tight">Mega City Cabs</span>
                         <p class="text-sm text-light/70">Admin Dashboard</p>
