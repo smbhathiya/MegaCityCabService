@@ -75,7 +75,6 @@
         th {
             background: linear-gradient(135deg, rgba(42, 42, 42, 0.9), rgba(26, 26, 26, 0.8));
         }
-        /* Responsive Modal Styling */
         @media (min-width: 768px) {
             .modal-form-grid {
                 display: grid;
@@ -135,7 +134,6 @@
         <div class="table-container p-6 rounded-xl shadow-2xl animate-slide-up">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-3xl font-bold text-white">Car List</h2>
-                <!-- Add Car Button aligned to the right -->
                 <button onclick="openAddCarModal()" class="bg-primary px-6 py-3 text-black font-semibold rounded-full btn-primary flex items-center gap-2">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                     Add New Car
@@ -495,16 +493,54 @@
             });
     }
 
-    function openUpdateModal(id, plateNumber, model, brand, year, color, capacity, status) {
-        document.getElementById('update_car_id').value = id;
-        document.getElementById('update_plate_number').value = plateNumber;
-        document.getElementById('update_model').value = model;
-        document.getElementById('update_brand').value = brand;
-        document.getElementById('update_year').value = year;
-        document.getElementById('update_color').value = color;
-        document.getElementById('update_capacity').value = capacity;
-        document.getElementById('update_status').value = status;
-        document.getElementById('updateCarModal').classList.remove('hidden');
+    function openUpdateModal(carId) {
+        // Fetch car details based on carId
+        fetch('<%= request.getContextPath() %>/admin/cars', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(cars => {
+                const car = cars.find(c => c.id === carId);
+                if (car) {
+                    document.getElementById('update_car_id').value = car.id;
+                    document.getElementById('update_plate_number').value = car.plateNumber || '';
+                    document.getElementById('update_model').value = car.model || '';
+                    document.getElementById('update_brand').value = car.brand || '';
+                    document.getElementById('update_year').value = car.year || '';
+                    document.getElementById('update_color').value = car.color || '';
+                    document.getElementById('update_capacity').value = car.capacity || '';
+                    document.getElementById('update_status').value = car.status || '';
+                    document.getElementById('updateCarModal').classList.remove('hidden');
+                } else {
+                    console.error('Car not found:', carId);
+                    Toastify({
+                        text: "Car not found",
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        style: { background: "red" },
+                        stopOnFocus: true
+                    }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching car details:', error);
+                Toastify({
+                    text: "Error loading car details: " + error.message,
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "red" },
+                    stopOnFocus: true
+                }).showToast();
+            });
     }
 
     function closeUpdateModal(event) {
