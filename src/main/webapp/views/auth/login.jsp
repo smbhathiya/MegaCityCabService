@@ -109,7 +109,7 @@
             <div class="flex items-center gap-2">
                 <a href="../index.jsp" class="flex items-center gap-2">
                     <i data-lucide="car" class="w-6 h-6 sm:w-8 sm:h-8 text-primary"></i>
-                    <span class="text-xl sm:text-2xl font-bold text-white">Login</span>
+                    <span class="text-xl sm:text-2xl font-bold text-white">Mega City Cabs</span>
                 </a>
             </div>
 
