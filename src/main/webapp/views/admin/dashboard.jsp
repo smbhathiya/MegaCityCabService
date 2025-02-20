@@ -13,44 +13,85 @@
                     colors: {
                         primary: {
                             DEFAULT: '#FCC603',
+                            50: 'rgba(252, 198, 3, 0.1)',
+                            100: 'rgba(252, 198, 3, 0.2)',
                             700: '#CC9F02'
-                        }
+                        },
+                        dark: '#1A1A1A',
+                        accent: '#2A2A2A'
                     },
-                    backgroundColor: {
-                        'dark': '#000000'
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        }
                     }
                 }
             }
-        }
+        };
     </script>
-    <link rel="stylesheet" href="https://unpkg.com/lucide@latest/icons.css">
+    <style>
+        body {
+            background-color: #1A1A1A;
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: #2A2A2A;
+            border-radius: 1rem;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+        .btn-primary {
+            transition: transform 0.2s ease, background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        table {
+            background-color: #2A2A2A;
+        }
+        th {
+            background: linear-gradient(135deg, rgba(42, 42, 42, 0.9), rgba(26, 26, 26, 0.8));
+        }
+    </style>
 </head>
 <body class="bg-dark text-white">
-<!-- Navbar -->
-<nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-dark/80">
-    <div class="container mx-auto px-4 py-2">
-        <div class="flex h-16 items-center justify-between">
-            <div class="text-2xl font-bold text-white flex items-center gap-2">
-                <i data-lucide="settings" class="w-8 h-8 text-primary"></i>
-                <span class="hidden sm:inline">Admin Dashboard</span>
+
+<!-- Navbar (Imported from Customer Dashboard) -->
+<nav class="fixed top-0 left-0 right-0 bg-dark/95 backdrop-blur-lg z-50 shadow-md">
+    <div class="container mx-auto px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="../index.jsp" class="flex items-center gap-3">
+                    <i data-lucide="settings" class="w-10 h-10 text-primary"></i>
+                    <div>
+                        <span class="text-3xl font-bold text-light tracking-tight">Mega City Cabs</span>
+                        <p class="text-sm text-light/70">Admin Dashboard</p>
+                    </div>
+                </a>
             </div>
-            <!-- Profile Dropdown -->
-            <div class="relative">
-                <button onclick="toggleProfileDropdown()" class="flex items-center gap-2 focus:outline-none"
-                        aria-label="Toggle profile dropdown">
-                    <i data-lucide="user" class="w-6 h-6 text-primary"></i>
-                    <span class="text-white">${userName}</span> <!-- Display user's name -->
-                </button>
-                <!-- Dropdown Menu -->
-                <div id="profileDropdown"
-                     class="absolute right-0 mt-2 w-48 bg-dark/90 border border-white/10 rounded-lg shadow-lg hidden">
-                    <div class="py-1">
-                        <a href="#" class="block px-4 py-2 text-sm text-white hover:bg-white/10">Profile</a>
-                        <form action="${pageContext.request.contextPath}/Logout" method="get">
-                            <button type="submit"
-                                    class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10">Logout
-                            </button>
-                        </form>
+            <div class="flex items-center gap-6">
+                <div class="relative">
+                    <button onclick="toggleProfileDropdown()" class="flex items-center gap-3 focus:outline-none" aria-label="Toggle profile dropdown">
+                        <i data-lucide="user" class="w-8 h-8 text-primary"></i>
+                        <span class="text-lg text-white font-medium">${userName}</span>
+                    </button>
+                    <div id="profileDropdown" class="absolute right-0 mt-2 w-56 bg-dark/95 border border-white/10 rounded-xl shadow-lg hidden">
+                        <div class="py-2">
+                            <a href="#" class="block px-4 py-2 text-sm text-white hover:bg-white/10">Profile</a>
+                            <button onclick="showLogoutModal()" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10">Logout</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -59,19 +100,19 @@
 </nav>
 
 <!-- Dashboard Section -->
-<!-- Dashboard Section -->
-<section class="container mx-auto px-4 py-24">
-    <h2 class="text-3xl font-bold mb-6">User Management</h2>
+<section class="container mx-auto px-6 py-28">
+    <h2 class="text-4xl font-bold text-white mb-8 animate-fade-in">User Management</h2>
 
     <!-- Search & Filter Row -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-6 mb-10 animate-slide-up">
         <div class="flex gap-4 w-full sm:w-auto">
-            <label for="searchUser" class="sr-only">Search users</label>
-            <input type="text" id="searchUser" placeholder="Search users..."
-                   class="px-4 py-2 w-full sm:w-80 bg-dark/20 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
-            <label for="userTypeFilter" class="sr-only">Filter by user type</label>
+            <div class="relative w-full sm:w-80">
+                <input type="text" id="searchUser" placeholder="Search users..."
+                       class="w-full bg-accent rounded-full py-3 px-6 border border-white/10 text-light placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                <i data-lucide="search" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+            </div>
             <select id="userTypeFilter"
-                    class="px-4 py-2 bg-dark border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                    class="px-6 py-3 bg-accent rounded-full border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
                 <option value="all">All Users</option>
                 <option value="manager">Manager</option>
                 <option value="customer">Customer</option>
@@ -79,60 +120,58 @@
             </select>
         </div>
         <button onclick="openCreateManagerModal()"
-                class="bg-primary px-4 py-2 text-black font-semibold rounded-md flex items-center gap-2 hover:bg-primary-700 transition whitespace-nowrap w-full sm:w-fit">
+                class="bg-primary px-6 py-3 text-black font-semibold rounded-full btn-primary flex items-center gap-2 w-full sm:w-auto">
             <i data-lucide="user-plus" class="w-5 h-5"></i>
-            <span>Create Manager</span>
+            Create Manager
         </button>
     </div>
 
     <!-- Users Table -->
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-dark/50 border border-white/10 rounded-lg">
+    <div class="overflow-x-auto card p-6 animate-slide-up">
+        <table class="min-w-full border border-white/10 rounded-xl">
             <thead>
-            <tr class="bg-dark/70">
-                <th class="px-4 sm:px-6 py-3 text-left text-sm font-semibold">Name</th>
-                <th class="px-4 sm:px-6 py-3 text-left text-sm font-semibold">Email</th>
-                <th class="px-4 sm:px-6 py-3 text-left text-sm font-semibold">Role</th>
-                <th class="px-4 sm:px-6 py-3 text-left text-sm font-semibold">Status</th>
-                <th class="px-4 sm:px-6 py-3 text-left text-sm font-semibold">Actions</th>
+            <tr>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Name</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Email</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Role</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
             </tr>
             </thead>
-            <tbody id="userTableBody">
-            </tbody>
+            <tbody id="userTableBody"></tbody>
         </table>
     </div>
 </section>
 
 <!-- Create Manager Modal -->
-<div id="createManagerModal" class="fixed inset-0 bg-black/50 hidden flex justify-center items-center p-4"
+<div id="createManagerModal" class="fixed inset-0 bg-dark/90 hidden flex justify-center items-center p-6 z-50"
      onclick="closeCreateManagerModal(event)">
-    <div class="bg-dark/90 p-6 sm:p-8 rounded-lg border border-white/10 w-full max-w-md"
-         onclick="event.stopPropagation()">
-        <h2 class="text-2xl font-bold mb-6">Create Manager</h2>
+    <div class="bg-accent p-8 rounded-xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
+        <h2 class="text-2xl font-bold text-white mb-6">Create Manager</h2>
         <form id="createManagerForm" action="${pageContext.request.contextPath}/CreateManager" method="post">
-            <div class="mb-4">
-                <label for="name" class="block text-sm font-medium mb-2">Name</label>
+            <div class="mb-6">
+                <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Name</label>
                 <input type="text" id="name" name="name" required
-                       class="w-full px-3 py-2 bg-dark/20 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
-            </div>
-            <div class="mb-4">
-                <label for="email" class="block text-sm font-medium mb-2">Email</label>
-                <input type="email" id="email" name="email" required
-                       class="w-full px-3 py-2 bg-dark/20 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
             </div>
             <div class="mb-6">
-                <label for="password" class="block text-sm font-medium mb-2">Password</label>
-                <input type="password" id="password" name="password" required
-                       class="w-full px-3 py-2 bg-dark/20 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                <input type="email" id="email" name="email" required
+                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
             </div>
-            <div id="createManagerError" class="text-red-500 text-sm mb-4 hidden"></div>
+            <div class="mb-6">
+                <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                <input type="password" id="password" name="password" required
+                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
+            </div>
+            <div id="createManagerError" class="text-red-500 text-sm mb-6 hidden"></div>
             <div class="flex justify-end gap-4">
                 <button type="button" onclick="closeCreateManagerModal()"
-                        class="px-4 py-2 border border-white/20 text-white rounded-md hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary">
+                        class="px-6 py-2 border border-white/20 text-white rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary">
                     Cancel
                 </button>
                 <button type="submit"
-                        class="px-4 py-2 bg-primary text-black rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary">
+                        class="px-6 py-2 bg-primary text-black rounded-full btn-primary font-semibold">
                     Create
                 </button>
             </div>
@@ -141,40 +180,39 @@
 </div>
 
 <!-- Edit User Modal -->
-<div id="editUserModal" class="fixed inset-0 bg-black/50 hidden flex justify-center items-center p-4"
+<div id="editUserModal" class="fixed inset-0 bg-dark/90 hidden flex justify-center items-center p-6 z-50"
      onclick="closeEditUserModal(event)">
-    <div class="bg-dark/90 p-6 sm:p-8 rounded-lg border border-white/10 w-full max-w-md"
-         onclick="event.stopPropagation()">
-        <h2 class="text-2xl font-bold mb-6">Edit User</h2>
+    <div class="bg-accent p-8 rounded-xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
+        <h2 class="text-2xl font-bold text-white mb-6">Edit User</h2>
         <form id="editUserForm" action="${pageContext.request.contextPath}/EditUser" method="post">
             <input type="hidden" id="editUserId" name="userId">
-            <div class="mb-4">
-                <label for="editName" class="block text-sm font-medium mb-2">Name</label>
+            <div class="mb-6">
+                <label for="editName" class="block text-sm font-medium text-gray-300 mb-2">Name</label>
                 <input type="text" id="editName" name="name" required
-                       class="w-full px-3 py-2 bg-dark/20 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
             </div>
-            <div class="mb-4">
-                <label for="editEmail" class="block text-sm font-medium mb-2">Email</label>
+            <div class="mb-6">
+                <label for="editEmail" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
                 <input type="email" id="editEmail" name="email" required
-                       class="w-full px-3 py-2 bg-dark/20 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
             </div>
-            <div class="mb-4">
-                <label for="editRole" class="block text-sm font-medium mb-2">Role</label>
+            <div class="mb-6">
+                <label for="editRole" class="block text-sm font-medium text-gray-300 mb-2">Role</label>
                 <select id="editRole" name="role"
-                        class="w-full px-3 py-2 bg-dark/20 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary">
+                        class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
                     <option value="manager">Manager</option>
                     <option value="customer">Customer</option>
                     <option value="driver">Driver</option>
                 </select>
             </div>
-            <div id="editUserError" class="text-red-500 text-sm mb-4 hidden"></div>
+            <div id="editUserError" class="text-red-500 text-sm mb-6 hidden"></div>
             <div class="flex justify-end gap-4">
                 <button type="button" onclick="closeEditUserModal()"
-                        class="px-4 py-2 border border-white/20 text-white rounded-md hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary">
+                        class="px-6 py-2 border border-white/20 text-white rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary">
                     Cancel
                 </button>
                 <button type="submit"
-                        class="px-4 py-2 bg-primary text-black rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary">
+                        class="px-6 py-2 bg-primary text-black rounded-full btn-primary font-semibold">
                     Save
                 </button>
             </div>
@@ -182,17 +220,37 @@
     </div>
 </div>
 
+<!-- Footer (Imported from Customer Dashboard) -->
+<footer class="bg-dark/50 py-12 border-t border-white/10">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-bold text-white mb-2">Mega City Cabs</h3>
+                <p class="text-gray-400">© <%= java.time.Year.now().getValue() %> All rights reserved</p>
+            </div>
+            <div class="flex gap-4 mt-4 md:mt-0">
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="twitter" class="w-6 h-6"></i>
+                </a>
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="linkedin" class="w-6 h-6"></i>
+                </a>
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="github" class="w-6 h-6"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>
     lucide.createIcons();
 
-    // Toggle Profile Dropdown
     function toggleProfileDropdown() {
-        const dropdown = document.getElementById('profileDropdown');
-        dropdown.classList.toggle('hidden');
+        document.getElementById('profileDropdown').classList.toggle('hidden');
     }
 
-    // Close Profile Dropdown when clicking outside
     document.addEventListener('click', function (event) {
         const dropdown = document.getElementById('profileDropdown');
         const profileButton = document.querySelector('button[onclick="toggleProfileDropdown()"]');
@@ -201,7 +259,33 @@
         }
     });
 
-    // Modal Functions
+    function showLogoutModal() {
+        document.getElementById('logoutModal').classList.remove('hidden');
+    }
+
+    function cancelLogout() {
+        document.getElementById('logoutModal').classList.add('hidden');
+    }
+
+    function confirmLogout() {
+        fetch('${pageContext.request.contextPath}/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    window.location.href = "../index.jsp";
+                } else {
+                    alert("Logout failed: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An unexpected error occurred during logout.");
+            });
+    }
+
     function openCreateManagerModal() {
         document.getElementById('createManagerModal').classList.remove('hidden');
     }
@@ -230,34 +314,28 @@
         }
     }
 
-    // Toggle User Status
     function toggleUserStatus(checkbox, userId) {
         const statusText = checkbox.parentElement.querySelector('span');
         const isEnabled = checkbox.checked;
 
-        fetch('${pageContext.request.contextPath}/UpdateUserStatus', {  // Add the context path
+        fetch('${pageContext.request.contextPath}/UpdateUserStatus', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({userId, isEnabled})
         }).then(response => {
             if (response.ok) {
                 statusText.textContent = isEnabled ? 'Enabled' : 'Disabled';
-                // Also update the checkbox state
-                checkbox.checked = isEnabled;
             } else {
-                // Revert the checkbox if the request fails
                 checkbox.checked = !isEnabled;
                 statusText.textContent = !isEnabled ? 'Enabled' : 'Disabled';
             }
         }).catch(error => {
             console.error('Error updating status:', error);
-            // Revert the checkbox if there's an error
             checkbox.checked = !isEnabled;
             statusText.textContent = !isEnabled ? 'Enabled' : 'Disabled';
         });
     }
 
-    // Search Functionality
     document.getElementById('searchUser').addEventListener('input', function () {
         const searchTerm = this.value.toLowerCase();
         const rows = document.querySelectorAll('#userTableBody tr');
@@ -266,74 +344,54 @@
             row.style.display = name.includes(searchTerm) ? '' : 'none';
         });
     });
-</script>
 
-<script>
     function fetchUsers() {
         fetch('${pageContext.request.contextPath}/getAllUsers')
             .then(response => response.json())
             .then(users => {
-                console.log('Fetched users:', users);
                 const userTableBody = document.getElementById('userTableBody');
-                // Clear existing rows
                 userTableBody.innerHTML = '';
 
                 users.forEach(user => {
-                    // Create row element
                     const row = document.createElement('tr');
                     row.className = 'border-b border-white/10';
 
-                    const nameCell = document.createElement('td');
-                    nameCell.className = 'px-4 sm:px-6 py-4';
-                    nameCell.textContent = user.name;
-
-                    const emailCell = document.createElement('td');
-                    emailCell.className = 'px-4 sm:px-6 py-4';
-                    emailCell.textContent = user.email;
-
-                    const roleCell = document.createElement('td');
-                    roleCell.className = 'px-4 sm:px-6 py-4';
-                    roleCell.textContent = user.role;
-
-                    const statusCell = document.createElement('td');
-                    statusCell.className = 'px-4 sm:px-6 py-4';
-
-                    const isEnabled = Boolean(user.isEnabled);
-                    console.log('Is enabled:', isEnabled);
-
-                    statusCell.innerHTML = `
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" ${user.isEnabled ? 'checked' : ''} class="sr-only peer" onchange="toggleUserStatus(this, ${user.id})">
-                            <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                            <span class="ml-3 text-sm">${user.isEnabled ? 'Enabled' : 'Disabled'}</span>
-                        </label>
+                    row.innerHTML = `
+                        <td class="px-6 py-4">${user.name}</td>
+                        <td class="px-6 py-4">${user.email}</td>
+                        <td class="px-6 py-4">${user.role}</td>
+                        <td class="px-6 py-4">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" ${user.isEnabled ? 'checked' : ''} class="sr-only peer" onchange="toggleUserStatus(this, ${user.id})">
+                                <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                <span class="ml-3 text-sm">${user.isEnabled ? 'Enabled' : 'Disabled'}</span>
+                            </label>
+                        </td>
+                        <td class="px-6 py-4 flex gap-2">
+                            <button onclick="openEditUserModal('${user.name}', '${user.email}', '${user.role}', ${user.id})" class="bg-blue-600 px-4 py-2 text-white rounded-full btn-primary font-semibold">Edit</button>
+                        </td>
                     `;
-
-                    // Actions cell
-                    const actionsCell = document.createElement('td');
-                    actionsCell.className = 'px-4 sm:px-6 py-4 flex gap-2';
-                    const editButton = document.createElement('button');
-                    editButton.className = 'bg-blue-500 px-4 py-2 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500';
-                    editButton.textContent = 'Edit';
-                    editButton.onclick = () => openEditUserModal(user.name, user.email, user.role, user.id);
-                    actionsCell.appendChild(editButton);
-
-                    row.appendChild(nameCell);
-                    row.appendChild(emailCell);
-                    row.appendChild(roleCell);
-                    row.appendChild(statusCell);
-                    row.appendChild(actionsCell);
 
                     userTableBody.appendChild(row);
                 });
             })
-            .catch(error => {
-                console.error('Error fetching users:', error);
-            });
+            .catch(error => console.error('Error fetching users:', error));
     }
 
     document.addEventListener('DOMContentLoaded', fetchUsers);
 </script>
+
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-accent p-6 rounded-xl shadow-2xl">
+        <h3 class="text-xl font-bold text-white mb-4">Confirm Logout</h3>
+        <p class="text-gray-300 mb-6">Are you sure you want to logout?</p>
+        <div class="flex gap-4 justify-end">
+            <button onclick="confirmLogout()" class="bg-primary text-dark px-6 py-2 rounded-full btn-primary font-semibold">Yes</button>
+            <button onclick="cancelLogout()" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 transition font-semibold">No</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
