@@ -108,12 +108,12 @@ public class DriverDAO {
                 driverStmt.executeUpdate();
             }
 
-            String userSql = "UPDATE users SET is_enabled = FALSE, updated_at = ? WHERE id = (SELECT user_id FROM drivers WHERE id = ?)";
-            try (PreparedStatement userStmt = connection.prepareStatement(userSql)) {
-                userStmt.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
-                userStmt.setString(2, driverId.toString());
-                userStmt.executeUpdate();
-            }
+//            String userSql = "UPDATE users SET is_enabled = FALSE, updated_at = ? WHERE id = (SELECT user_id FROM drivers WHERE id = ?)";
+//            try (PreparedStatement userStmt = connection.prepareStatement(userSql)) {
+//                userStmt.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+//                userStmt.setString(2, driverId.toString());
+//                userStmt.executeUpdate();
+//            }
 
             connection.commit();
             return true;
@@ -130,7 +130,7 @@ public class DriverDAO {
     // Get all drivers
     public List<Driver> getAllDrivers() throws SQLException {
         List<Driver> drivers = new ArrayList<>();
-        String sql = "SELECT d.*, u.name, u.email FROM drivers d JOIN users u ON d.user_id = u.id WHERE u.is_enabled = TRUE";
+        String sql = "SELECT d.*, u.name, u.email FROM drivers d JOIN users u ON d.user_id = u.id ";
         try (Connection connection = getConnection();
              Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {

@@ -345,7 +345,7 @@
 
                 const removeBtn = document.createElement('button');
                 removeBtn.className = "bg-red-600 px-4 py-2 text-white rounded-full btn-primary font-semibold remove-btn";
-                removeBtn.textContent = "Remove";
+                removeBtn.textContent = "Disable";
                 removeBtn.dataset.id = driver.id;
 
                 actionCell.appendChild(editBtn);
@@ -582,7 +582,7 @@
                   fetchDrivers();
                 } else {
                   Toastify({
-                    text: data.message || "Failed to remove driver",
+                    text: data.message || "Failed to disable driver",
                     duration: 3000,
                     close: true,
                     gravity: "top",

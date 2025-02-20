@@ -159,24 +159,6 @@
                 </div>
             </a>
         </div>
-
-        <script>
-            // Fetch Stats
-            document.addEventListener("DOMContentLoaded", function () {
-                // Simulate fetching stats (replace with real API calls)
-                const totalCars = document.getElementById('totalCars');
-                const totalDrivers = document.getElementById('totalDrivers');
-                const activeBookings = document.getElementById('activeBookings');
-                const pendingRequests = document.getElementById('pendingRequests');
-
-                if (totalCars && totalDrivers && activeBookings && pendingRequests) {
-                    totalCars.textContent = "15"; // Example
-                    totalDrivers.textContent = "10"; // Example
-                    activeBookings.textContent = "5"; // Example
-                    pendingRequests.textContent = "2"; // Example
-                }
-            });
-        </script>
     </div>
 </main>
 
@@ -225,7 +207,8 @@
     function confirmLogout() {
         fetch('<%= request.getContextPath() %>/logout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
         })
             .then(response => response.json())
             .then(data => {
@@ -256,6 +239,38 @@
                 }).showToast();
             });
     }
+
+    // Fetch Dashboard Stats
+    document.addEventListener("DOMContentLoaded", function () {
+        fetch('<%= request.getContextPath() %>/admin/dashboard-stats', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dashboard stats:', data);
+                document.getElementById('totalCars').textContent = data.totalCars || '0';
+                document.getElementById('totalDrivers').textContent = data.totalDrivers || '0';
+                document.getElementById('activeBookings').textContent = data.activeBookings || '0';
+                document.getElementById('pendingRequests').textContent = data.pendingRequests || '0';
+            })
+            .catch(error => {
+                console.error('Error fetching dashboard stats:', error);
+                Toastify({
+                    text: "Error loading dashboard stats: " + error.message,
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "red" },
+                    stopOnFocus: true
+                }).showToast();
+            });
+    });
 </script>
 
 <!-- Logout Confirmation Modal -->
