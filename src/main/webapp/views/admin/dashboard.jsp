@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.util.UUID" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Mega City Cabs</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -18,6 +20,7 @@
                             700: '#CC9F02'
                         },
                         dark: '#1A1A1A',
+                        light: '#F5F5F5',
                         accent: '#2A2A2A'
                     },
                     animation: {
@@ -38,6 +41,7 @@
             }
         };
     </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
         body {
             background-color: #1A1A1A;
@@ -52,23 +56,35 @@
             transform: translateY(-5px);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
         }
+        a.card {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+        .overview-card {
+            background: linear-gradient(135deg, rgba(42, 42, 42, 0.9), rgba(26, 26, 26, 0.8));
+            border: none;
+        }
         .btn-primary {
             transition: transform 0.2s ease, background-color 0.3s ease;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
         }
-        table {
-            background-color: #2A2A2A;
-        }
-        th {
-            background: linear-gradient(135deg, rgba(42, 42, 42, 0.9), rgba(26, 26, 26, 0.8));
-        }
     </style>
 </head>
-<body class="bg-dark text-white">
+<body class="bg-dark text-light">
+<%
+    UUID adminUUID = (UUID) session.getAttribute("userId");
+    String adminId = adminUUID != null ? adminUUID.toString() : null;
+    String role = (String) session.getAttribute("role");
+    if (adminId == null || !"admin".equals(role)) {
+        response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+        return;
+    }
+%>
 
-<!-- Navbar (Imported from Customer Dashboard) -->
+<!-- Navbar -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/95 backdrop-blur-lg z-50 shadow-md">
     <div class="container mx-auto px-6 py-4">
         <div class="flex items-center justify-between">
@@ -85,7 +101,7 @@
                 <div class="relative">
                     <button onclick="toggleProfileDropdown()" class="flex items-center gap-3 focus:outline-none" aria-label="Toggle profile dropdown">
                         <i data-lucide="user" class="w-8 h-8 text-primary"></i>
-                        <span class="text-lg text-white font-medium">${userName}</span>
+                        <span class="text-lg text-white font-medium"><%= session.getAttribute("userName") != null ? session.getAttribute("userName") : "Guest" %></span>
                     </button>
                     <div id="profileDropdown" class="absolute right-0 mt-2 w-56 bg-dark/95 border border-white/10 rounded-xl shadow-lg hidden">
                         <div class="py-2">
@@ -99,129 +115,73 @@
     </div>
 </nav>
 
-<!-- Dashboard Section -->
-<section class="container mx-auto px-6 py-28">
-    <h2 class="text-4xl font-bold text-white mb-8 animate-fade-in">User Management</h2>
-
-    <!-- Search & Filter Row -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-6 mb-10 animate-slide-up">
-        <div class="flex gap-4 w-full sm:w-auto">
-            <div class="relative w-full sm:w-80">
-                <input type="text" id="searchUser" placeholder="Search users..."
-                       class="w-full bg-accent rounded-full py-3 px-6 border border-white/10 text-light placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50">
-                <i data-lucide="search" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+<!-- Main Content -->
+<main class="pt-28 pb-12 px-6">
+    <div class="container mx-auto">
+        <!-- Dashboard Overview -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12 animate-slide-up">
+            <div class="overview-card rounded-xl p-6">
+                <p class="text-sm text-light/70 mb-2">Total Cars</p>
+                <p id="totalCars" class="text-3xl font-bold text-white">0</p>
             </div>
-            <select id="userTypeFilter"
-                    class="px-6 py-3 bg-accent rounded-full border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
-                <option value="all">All Users</option>
-                <option value="manager">Manager</option>
-                <option value="customer">Customer</option>
-                <option value="driver">Driver</option>
-            </select>
+            <div class="overview-card rounded-xl p-6">
+                <p class="text-sm text-light/70 mb-2">Total Drivers</p>
+                <p id="totalDrivers" class="text-3xl font-bold text-white">0</p>
+            </div>
+            <div class="overview-card rounded-xl p-6">
+                <p class="text-sm text-light/70 mb-2">Active Bookings</p>
+                <p id="activeBookings" class="text-3xl font-bold text-white">0</p>
+            </div>
+            <div class="overview-card rounded-xl p-6">
+                <p class="text-sm text-light/70 mb-2">Pending Requests</p>
+                <p id="pendingRequests" class="text-3xl font-bold text-white">0</p>
+            </div>
         </div>
-        <button onclick="openCreateManagerModal()"
-                class="bg-primary px-6 py-3 text-black font-semibold rounded-full btn-primary flex items-center gap-2 w-full sm:w-auto">
-            <i data-lucide="user-plus" class="w-5 h-5"></i>
-            Create Manager
-        </button>
-    </div>
 
-    <!-- Users Table -->
-    <div class="overflow-x-auto card p-6 animate-slide-up">
-        <table class="min-w-full border border-white/10 rounded-xl">
-            <thead>
-            <tr>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Name</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Email</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Role</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
-                <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
-            </tr>
-            </thead>
-            <tbody id="userTableBody"></tbody>
-        </table>
-    </div>
-</section>
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            <a href="${pageContext.request.contextPath}/views/admin/manageCars.jsp" class="card p-8 animate-slide-up">
+                <div class="flex flex-col items-center text-center">
+                    <i data-lucide="car" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">Manage Cars</h2>
+                </div>
+            </a>
+            <a href="${pageContext.request.contextPath}/views/admin/manageDrivers.jsp" class="card p-8 animate-slide-up">
+                <div class="flex flex-col items-center text-center">
+                    <i data-lucide="users" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">Manage Drivers</h2>
+                </div>
+            </a>
+            <a href="#" class="card p-8 animate-slide-up">
+                <div class="flex flex-col items-center text-center">
+                    <i data-lucide="bar-chart" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">View Reports</h2>
+                </div>
+            </a>
+        </div>
 
-<!-- Create Manager Modal -->
-<div id="createManagerModal" class="fixed inset-0 bg-dark/90 hidden flex justify-center items-center p-6 z-50"
-     onclick="closeCreateManagerModal(event)">
-    <div class="bg-accent p-8 rounded-xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
-        <h2 class="text-2xl font-bold text-white mb-6">Create Manager</h2>
-        <form id="createManagerForm" action="${pageContext.request.contextPath}/CreateManager" method="post">
-            <div class="mb-6">
-                <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Name</label>
-                <input type="text" id="name" name="name" required
-                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
-            </div>
-            <div class="mb-6">
-                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                <input type="email" id="email" name="email" required
-                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
-            </div>
-            <div class="mb-6">
-                <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                <input type="password" id="password" name="password" required
-                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
-            </div>
-            <div id="createManagerError" class="text-red-500 text-sm mb-6 hidden"></div>
-            <div class="flex justify-end gap-4">
-                <button type="button" onclick="closeCreateManagerModal()"
-                        class="px-6 py-2 border border-white/20 text-white rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary">
-                    Cancel
-                </button>
-                <button type="submit"
-                        class="px-6 py-2 bg-primary text-black rounded-full btn-primary font-semibold">
-                    Create
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+        <script>
+            // Fetch Stats
+            document.addEventListener("DOMContentLoaded", function () {
+                // Simulate fetching stats (replace with real API calls)
+                const totalCars = document.getElementById('totalCars');
+                const totalDrivers = document.getElementById('totalDrivers');
+                const activeBookings = document.getElementById('activeBookings');
+                const pendingRequests = document.getElementById('pendingRequests');
 
-<!-- Edit User Modal -->
-<div id="editUserModal" class="fixed inset-0 bg-dark/90 hidden flex justify-center items-center p-6 z-50"
-     onclick="closeEditUserModal(event)">
-    <div class="bg-accent p-8 rounded-xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
-        <h2 class="text-2xl font-bold text-white mb-6">Edit User</h2>
-        <form id="editUserForm" action="${pageContext.request.contextPath}/EditUser" method="post">
-            <input type="hidden" id="editUserId" name="userId">
-            <div class="mb-6">
-                <label for="editName" class="block text-sm font-medium text-gray-300 mb-2">Name</label>
-                <input type="text" id="editName" name="name" required
-                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
-            </div>
-            <div class="mb-6">
-                <label for="editEmail" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                <input type="email" id="editEmail" name="email" required
-                       class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
-            </div>
-            <div class="mb-6">
-                <label for="editRole" class="block text-sm font-medium text-gray-300 mb-2">Role</label>
-                <select id="editRole" name="role"
-                        class="w-full px-4 py-3 bg-dark/20 border border-white/10 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="manager">Manager</option>
-                    <option value="customer">Customer</option>
-                    <option value="driver">Driver</option>
-                </select>
-            </div>
-            <div id="editUserError" class="text-red-500 text-sm mb-6 hidden"></div>
-            <div class="flex justify-end gap-4">
-                <button type="button" onclick="closeEditUserModal()"
-                        class="px-6 py-2 border border-white/20 text-white rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary">
-                    Cancel
-                </button>
-                <button type="submit"
-                        class="px-6 py-2 bg-primary text-black rounded-full btn-primary font-semibold">
-                    Save
-                </button>
-            </div>
-        </form>
+                if (totalCars && totalDrivers && activeBookings && pendingRequests) {
+                    totalCars.textContent = "15"; // Example
+                    totalDrivers.textContent = "10"; // Example
+                    activeBookings.textContent = "5"; // Example
+                    pendingRequests.textContent = "2"; // Example
+                }
+            });
+        </script>
     </div>
-</div>
+</main>
 
-<!-- Footer (Imported from Customer Dashboard) -->
-<footer class="bg-dark/50 py-12 border-t border-white/10">
+<!-- Footer -->
+<footer class="bg-dark/50 py-12 border-t border-white/10 flex-shrink-0">
     <div class="container mx-auto px-4">
         <div class="flex flex-col md:flex-row justify-between items-center">
             <div>
@@ -244,21 +204,16 @@
 </footer>
 
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script>
     lucide.createIcons();
 
+    // Toggle Profile Dropdown
     function toggleProfileDropdown() {
         document.getElementById('profileDropdown').classList.toggle('hidden');
     }
 
-    document.addEventListener('click', function (event) {
-        const dropdown = document.getElementById('profileDropdown');
-        const profileButton = document.querySelector('button[onclick="toggleProfileDropdown()"]');
-        if (!dropdown.contains(event.target) && !profileButton.contains(event.target)) {
-            dropdown.classList.add('hidden');
-        }
-    });
-
+    // Logout Modal Functions
     function showLogoutModal() {
         document.getElementById('logoutModal').classList.remove('hidden');
     }
@@ -268,7 +223,7 @@
     }
 
     function confirmLogout() {
-        fetch('${pageContext.request.contextPath}/logout', {
+        fetch('<%= request.getContextPath() %>/logout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         })
@@ -277,108 +232,30 @@
                 if (data.status === "success") {
                     window.location.href = "../index.jsp";
                 } else {
-                    alert("Logout failed: " + data.message);
+                    Toastify({
+                        text: "Logout failed: " + data.message,
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        style: { background: "red" },
+                        stopOnFocus: true
+                    }).showToast();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert("An unexpected error occurred during logout.");
+                Toastify({
+                    text: "An unexpected error occurred during logout.",
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "red" },
+                    stopOnFocus: true
+                }).showToast();
             });
     }
-
-    function openCreateManagerModal() {
-        document.getElementById('createManagerModal').classList.remove('hidden');
-    }
-
-    function closeCreateManagerModal(event) {
-        if (event && event.target === document.getElementById('createManagerModal')) {
-            document.getElementById('createManagerModal').classList.add('hidden');
-        } else if (!event) {
-            document.getElementById('createManagerModal').classList.add('hidden');
-        }
-    }
-
-    function openEditUserModal(name, email, role, userId) {
-        document.getElementById('editName').value = name;
-        document.getElementById('editEmail').value = email;
-        document.getElementById('editRole').value = role.toLowerCase();
-        document.getElementById('editUserId').value = userId;
-        document.getElementById('editUserModal').classList.remove('hidden');
-    }
-
-    function closeEditUserModal(event) {
-        if (event && event.target === document.getElementById('editUserModal')) {
-            document.getElementById('editUserModal').classList.add('hidden');
-        } else if (!event) {
-            document.getElementById('editUserModal').classList.add('hidden');
-        }
-    }
-
-    function toggleUserStatus(checkbox, userId) {
-        const statusText = checkbox.parentElement.querySelector('span');
-        const isEnabled = checkbox.checked;
-
-        fetch('${pageContext.request.contextPath}/UpdateUserStatus', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({userId, isEnabled})
-        }).then(response => {
-            if (response.ok) {
-                statusText.textContent = isEnabled ? 'Enabled' : 'Disabled';
-            } else {
-                checkbox.checked = !isEnabled;
-                statusText.textContent = !isEnabled ? 'Enabled' : 'Disabled';
-            }
-        }).catch(error => {
-            console.error('Error updating status:', error);
-            checkbox.checked = !isEnabled;
-            statusText.textContent = !isEnabled ? 'Enabled' : 'Disabled';
-        });
-    }
-
-    document.getElementById('searchUser').addEventListener('input', function () {
-        const searchTerm = this.value.toLowerCase();
-        const rows = document.querySelectorAll('#userTableBody tr');
-        rows.forEach(row => {
-            const name = row.querySelector('td').textContent.toLowerCase();
-            row.style.display = name.includes(searchTerm) ? '' : 'none';
-        });
-    });
-
-    function fetchUsers() {
-        fetch('${pageContext.request.contextPath}/getAllUsers')
-            .then(response => response.json())
-            .then(users => {
-                const userTableBody = document.getElementById('userTableBody');
-                userTableBody.innerHTML = '';
-
-                users.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.className = 'border-b border-white/10';
-
-                    row.innerHTML = `
-                        <td class="px-6 py-4">${user.name}</td>
-                        <td class="px-6 py-4">${user.email}</td>
-                        <td class="px-6 py-4">${user.role}</td>
-                        <td class="px-6 py-4">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" ${user.isEnabled ? 'checked' : ''} class="sr-only peer" onchange="toggleUserStatus(this, ${user.id})">
-                                <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                <span class="ml-3 text-sm">${user.isEnabled ? 'Enabled' : 'Disabled'}</span>
-                            </label>
-                        </td>
-                        <td class="px-6 py-4 flex gap-2">
-                            <button onclick="openEditUserModal('${user.name}', '${user.email}', '${user.role}', ${user.id})" class="bg-blue-600 px-4 py-2 text-white rounded-full btn-primary font-semibold">Edit</button>
-                        </td>
-                    `;
-
-                    userTableBody.appendChild(row);
-                });
-            })
-            .catch(error => console.error('Error fetching users:', error));
-    }
-
-    document.addEventListener('DOMContentLoaded', fetchUsers);
 </script>
 
 <!-- Logout Confirmation Modal -->

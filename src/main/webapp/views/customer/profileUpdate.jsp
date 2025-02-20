@@ -97,7 +97,6 @@
                 <div class="mb-4">
                     <label for="email" class="block text-sm font-medium text-light">Email</label>
                     <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light" disabled readonly>
-                    <small class="text-gray-500">You can't update your email</small>
                 </div>
                 <div class="mb-4">
                     <label for="contactNo" class="block text-sm font-medium text-light">Contact Number</label>

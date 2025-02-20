@@ -13,10 +13,8 @@ public class CarDAO {
     // Add a new car
     public boolean addCar(Car car) {
         String sql = "INSERT INTO cars (id, plate_number, model, brand, year, color, capacity, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setString(1, car.getId().toString());
             stmt.setString(2, car.getPlateNumber());
             stmt.setString(3, car.getModel());
@@ -27,9 +25,7 @@ public class CarDAO {
             stmt.setString(8, car.getStatus());
             stmt.setString(9, car.getCreatedAt());
             stmt.setString(10, car.getUpdatedAt());
-
             return stmt.executeUpdate() > 0;
-
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -39,10 +35,8 @@ public class CarDAO {
     // Update an existing car
     public boolean updateCar(Car car) {
         String sql = "UPDATE cars SET plate_number = ?, model = ?, brand = ?, year = ?, color = ?, capacity = ?, status = ?, updated_at = ? WHERE id = ?";
-
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setString(1, car.getPlateNumber());
             stmt.setString(2, car.getModel());
             stmt.setString(3, car.getBrand());
@@ -52,9 +46,20 @@ public class CarDAO {
             stmt.setString(7, car.getStatus());
             stmt.setString(8, car.getUpdatedAt());
             stmt.setString(9, car.getId().toString());
-
             return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
+    // Remove a car
+    public boolean removeCar(String carId) {
+        String sql = "DELETE FROM cars WHERE id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, carId);
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -65,11 +70,9 @@ public class CarDAO {
     public List<Car> getAllCars() {
         List<Car> cars = new ArrayList<>();
         String sql = "SELECT * FROM cars";
-
         try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
             while (rs.next()) {
                 Car car = new Car(
                         UUID.fromString(rs.getString("id")),

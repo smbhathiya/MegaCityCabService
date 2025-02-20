@@ -19,13 +19,14 @@ public class CustomerDAO {
             conn = DBUtil.getConnection();
             conn.setAutoCommit(false);
 
-            String sql = "INSERT INTO users (id, name, email, is_enabled, password) VALUES (?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO users (id, name, email, is_enabled, password,role) VALUES (?, ?, ?, ?, ?,?)";
             stmt1 = conn.prepareStatement(sql);
             stmt1.setObject(1, userId.toString());
             stmt1.setString(2, name);
             stmt1.setString(3, email);
             stmt1.setBoolean(4, isEnabled);
             stmt1.setString(5, passwordHash);
+            stmt1.setString(6, "customer");
 
             int affectedRows1 = stmt1.executeUpdate();
             if (affectedRows1 == 0) {

@@ -150,7 +150,7 @@
                     <h2 class="text-xl font-semibold text-white">Profile Management</h2>
                 </div>
             </a>
-            <a href="/book-ride" class="card p-8 animate-slide-up">
+            <a href="${pageContext.request.contextPath}/views/customer/addBooking.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="car" class="w-12 h-12 text-primary mb-4"></i>
                     <h2 class="text-xl font-semibold text-white">Book a Ride</h2>
