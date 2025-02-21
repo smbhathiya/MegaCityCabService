@@ -130,7 +130,7 @@ public class DriverServlet extends HttpServlet {
             String currentTime = new Timestamp(System.currentTimeMillis()).toString();
 
             Driver driver = new Driver(driverId, null, null, licenseNumber, availabilityStatus, 0.0, null, currentTime);
-            driver.setUserId(driverDAO.getDriverById(driverId).getUserId()); // Fetch userId from existing driver
+            driver.setUserId(driverDAO.getDriverById(driverId).getUserId());
 
             boolean success = driverDAO.updateDriver(driver, name);
             response.setContentType("application/json");

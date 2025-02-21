@@ -11,8 +11,10 @@ public class Driver {
     private double rating;
     private String createdAt;
     private String updatedAt;
-    private String name;  // Added from users table
-    private String email; // Added from users table
+    private String name;
+    private String email;
+    private String assignmentStatus;
+    private String carPlateNumber;
 
     // Constructor
     public Driver(UUID id, UUID userId, UUID carId, String licenseNumber, String availabilityStatus, double rating, String createdAt, String updatedAt) {
@@ -105,5 +107,21 @@ public class Driver {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getAssignmentStatus() {
+        return assignmentStatus;
+    }
+
+    public void setAssignmentStatus(String assignmentStatus) {
+        this.assignmentStatus = assignmentStatus;
+    }
+
+    public String getCarPlateNumber() {
+        return carPlateNumber;
+    }
+
+    public void setCarPlateNumber(String carPlateNumber) {
+        this.carPlateNumber = carPlateNumber;
     }
 }

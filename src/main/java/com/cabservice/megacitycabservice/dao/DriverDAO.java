@@ -130,7 +130,9 @@ public class DriverDAO {
     // Get all drivers
     public List<Driver> getAllDrivers() throws SQLException {
         List<Driver> drivers = new ArrayList<>();
-        String sql = "SELECT d.*, u.name, u.email FROM drivers d JOIN users u ON d.user_id = u.id ";
+        String sql = "SELECT d.*, u.name, u.email, c.plate_number FROM drivers d " +
+                "JOIN users u ON d.user_id = u.id " +
+                "LEFT JOIN cars c ON d.car_id = c.id";
         try (Connection connection = getConnection();
              Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -145,13 +147,25 @@ public class DriverDAO {
                         rs.getString("created_at"),
                         rs.getString("updated_at")
                 );
+
                 driver.setName(rs.getString("name"));
                 driver.setEmail(rs.getString("email"));
+
+                if (rs.getString("car_id") != null) {
+                    driver.setAssignmentStatus("Assigned");
+                    driver.setCarPlateNumber(rs.getString("plate_number"));
+                } else {
+                    driver.setAssignmentStatus("Not Assigned");
+                    driver.setCarPlateNumber(null);
+                }
+
                 drivers.add(driver);
             }
         }
         return drivers;
     }
+
+
 
     // Get driver by ID
     public Driver getDriverById(UUID driverId) throws SQLException {

@@ -92,6 +92,40 @@
         gap: 1rem;
       }
     }
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+    .dropdown-button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background-color: rgba(42, 42, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      color: white;
+      text-align: left;
+      cursor: pointer;
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: #2A2A2A;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .dropdown-item {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+    .dropdown-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
   </style>
 </head>
 <body class="bg-dark text-white min-h-screen flex flex-col">
@@ -147,6 +181,7 @@
             <th class="px-6 py-4 text-left text-sm font-semibold text-white">Email</th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-white">License Number</th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-white">Availability</th>
+            <th class="px-6 py-4 text-left text-sm font-semibold text-white">Assigned Car</th>
             <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
           </tr>
           </thead>
@@ -251,6 +286,28 @@
   </div>
 </div>
 
+<!-- Assign Car Modal -->
+<div id="assignCarModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="closeAssignCarModal(event)">
+  <div class="bg-accent p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-md mx-4" onclick="event.stopPropagation()">
+    <h2 class="text-2xl font-bold text-white mb-6">Assign Car to Driver</h2>
+    <form id="assignCarForm" onsubmit="assignCar(event)">
+      <input type="hidden" id="assign_driver_id" name="driverId">
+      <input type="hidden" id="selected_car_id" name="carId">
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Select Car</label>
+        <div class="custom-dropdown">
+          <div id="car_dropdown_button" class="dropdown-button">-- Select a Car --</div>
+          <div id="car_dropdown_menu" class="dropdown-menu"></div>
+        </div>
+      </div>
+      <div class="flex gap-4 justify-end">
+        <button type="button" onclick="closeAssignCarModal()" class="px-6 py-2 border border-white/20 text-white rounded-full hover:bg-white/10">Cancel</button>
+        <button type="submit" class="px-6 py-2 bg-primary text-dark rounded-full btn-primary font-semibold">Assign</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
@@ -311,7 +368,7 @@
 
   function fetchDrivers() {
     const tbody = document.getElementById('driverTableBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Loading...</td></tr>';
 
     fetch('<%= request.getContextPath() %>/admin/drivers', {
       method: 'GET',
@@ -334,6 +391,7 @@
                 row.appendChild(createCell(driver.email));
                 row.appendChild(createCell(driver.licenseNumber));
                 row.appendChild(createCell(driver.availabilityStatus));
+                row.appendChild(createCell(driver.carPlateNumber ? driver.carPlateNumber : 'Not Assigned'));
 
                 const actionCell = document.createElement('td');
                 actionCell.className = "px-6 py-4 flex gap-2";
@@ -343,12 +401,18 @@
                 editBtn.textContent = "Edit";
                 editBtn.dataset.id = driver.id;
 
+                const assignCarBtn = document.createElement('button');
+                assignCarBtn.className = "bg-green-600 px-4 py-2 text-white rounded-full btn-primary font-semibold assign-car-btn";
+                assignCarBtn.textContent = "Assign Car";
+                assignCarBtn.dataset.id = driver.id;
+
                 const removeBtn = document.createElement('button');
                 removeBtn.className = "bg-red-600 px-4 py-2 text-white rounded-full btn-primary font-semibold remove-btn";
                 removeBtn.textContent = "Disable";
                 removeBtn.dataset.id = driver.id;
 
                 actionCell.appendChild(editBtn);
+                actionCell.appendChild(assignCarBtn);
                 actionCell.appendChild(removeBtn);
                 row.appendChild(actionCell);
 
@@ -357,7 +421,7 @@
             })
             .catch(error => {
               console.error('Error fetching drivers:', error);
-              tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Error loading data</td></tr>';
+              tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Error loading data</td></tr>';
               Toastify({
                 text: "Error fetching drivers: " + error.message,
                 duration: 3000,
@@ -384,6 +448,9 @@
     } else if (event.target.classList.contains("remove-btn")) {
       const driverId = event.target.dataset.id;
       removeDriver(driverId);
+    } else if (event.target.classList.contains("assign-car-btn")) {
+      const driverId = event.target.dataset.id;
+      openAssignCarModal(driverId);
     }
   });
 
@@ -509,7 +576,7 @@
     const formData = {
       id: document.getElementById('update_driver_id').value,
       name: document.getElementById('update_driver_name').value,
-      email: document.getElementById('update_driver_email').value,
+      email: document.getElement.getElementById('update_driver_email').value,
       licenseNumber: document.getElementById('update_license_number').value,
       availabilityStatus: document.getElementById('update_availability_status').value
     };
@@ -605,6 +672,204 @@
                 }).showToast();
               });
     }
+  }
+
+  function openAssignCarModal(driverId) {
+    document.getElementById('assign_driver_id').value = driverId;
+    const dropdownButton = document.getElementById('car_dropdown_button');
+    const dropdownMenu = document.getElementById('car_dropdown_menu');
+    dropdownButton.textContent = 'Loading cars...';
+    dropdownMenu.innerHTML = '';
+
+    fetch('<%= request.getContextPath() %>/admin/assign-car?availableOnly=true', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    })
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(cars => {
+              console.log('Fetched unassigned cars:', cars);
+              dropdownButton.textContent = '-- Select a Car --';
+              dropdownMenu.innerHTML = '';
+
+              if (cars.length === 0) {
+                const noCarItem = document.createElement('div');
+                noCarItem.className = 'dropdown-item';
+                noCarItem.textContent = 'No available cars';
+                dropdownMenu.appendChild(noCarItem);
+              } else {
+                cars.forEach(car => {
+                  console.log('Processing car:', car);
+
+                  const item = document.createElement('div');
+                  item.className = 'dropdown-item';
+
+                  // Dropdown list item rendering with spans
+                  const brandSpan = document.createElement('span');
+                  brandSpan.textContent = car.brand || 'N/A';
+
+                  const modelSpan = document.createElement('span');
+                  modelSpan.textContent = ' ' + (car.model || 'N/A');
+
+                  const plateSpan = document.createElement('span');
+                  plateSpan.textContent = ' - ' + (car.plateNumber || 'N/A');
+
+                  const capacitySpan = document.createElement('span');
+                  capacitySpan.textContent = ' (Capacity: ' + (car.capacity || 'N/A') + ')';
+
+                  item.appendChild(brandSpan);
+                  item.appendChild(modelSpan);
+                  item.appendChild(plateSpan);
+                  item.appendChild(capacitySpan);
+
+                  item.dataset.carId = car.id;
+
+                  // Store car data in a closure to preserve scope
+                  const carData = {
+                    id: car.id,
+                    brand: car.brand || 'N/A',
+                    model: car.model || 'N/A',
+                    plateNumber: car.plateNumber || 'N/A',
+                    capacity: car.capacity || 'N/A'
+                  };
+
+                  item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.getElementById('selected_car_id').value = carData.id;
+
+                    // Clear existing content in dropdownButton
+                    dropdownButton.innerHTML = '';
+
+                    // Use same span technique for selected item as in dropdown list
+                    const selectedBrandSpan = document.createElement('span');
+                    selectedBrandSpan.textContent = carData.brand;
+
+                    const selectedModelSpan = document.createElement('span');
+                    selectedModelSpan.textContent = ' ' + carData.model;
+
+                    const selectedPlateSpan = document.createElement('span');
+                    selectedPlateSpan.textContent = ' - ' + carData.plateNumber;
+
+                    const selectedCapacitySpan = document.createElement('span');
+                    selectedCapacitySpan.textContent = ' (Capacity: ' + carData.capacity + ')';
+
+                    dropdownButton.appendChild(selectedBrandSpan);
+                    dropdownButton.appendChild(selectedModelSpan);
+                    dropdownButton.appendChild(selectedPlateSpan);
+                    dropdownButton.appendChild(selectedCapacitySpan);
+
+                    dropdownMenu.style.display = 'none';
+                  });
+
+                  dropdownMenu.appendChild(item);
+                });
+              }
+
+              // Toggle dropdown on button click
+              dropdownButton.onclick = (e) => {
+                e.stopPropagation();
+                dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+              };
+
+              document.getElementById('assignCarModal').classList.remove('hidden');
+            })
+            .catch(error => {
+              console.error('Error fetching available cars:', error);
+              dropdownButton.textContent = 'Error loading cars';
+              Toastify({
+                text: "Error loading cars: " + error.message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                style: { background: "red" },
+                stopOnFocus: true
+              }).showToast();
+            });
+  }
+
+  // Close modal function
+  function closeAssignCarModal(event) {
+    if (!event || event.target === document.getElementById('assignCarModal')) {
+      document.getElementById('assignCarModal').classList.add('hidden');
+    }
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", function (e) {
+    const dropdownButton = document.getElementById('car_dropdown_button');
+    const dropdownMenu = document.getElementById('car_dropdown_menu');
+
+    if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
+      dropdownMenu.style.display = 'none';
+    }
+  });
+
+  function assignCar(event) {
+    event.preventDefault();
+    const driverId = document.getElementById('assign_driver_id').value;
+    const carId = document.getElementById('selected_car_id').value;
+
+    if (!carId) {
+      Toastify({
+        text: "Please select a car",
+        duration: 3000,
+        close: true,
+        gravity: "top",
+        position: "right",
+        style: { background: "red" },
+        stopOnFocus: true
+      }).showToast();
+      return;
+    }
+
+    fetch('<%= request.getContextPath() %>/admin/assign-car', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ driverId, carId })
+    })
+            .then(response => response.json())
+            .then(data => {
+              if (data.status === "success") {
+                Toastify({
+                  text: "Car assigned successfully",
+                  duration: 1500,
+                  close: true,
+                  gravity: "top",
+                  position: "right",
+                  style: { background: "green" },
+                  stopOnFocus: true
+                }).showToast();
+                closeAssignCarModal();
+                fetchDrivers();
+              } else {
+                Toastify({
+                  text: data.message || "Failed to assign car",
+                  duration: 3000,
+                  close: true,
+                  gravity: "top",
+                  position: "right",
+                  style: { background: "red" },
+                  stopOnFocus: true
+                }).showToast();
+              }
+            })
+            .catch(error => {
+              console.error('Error assigning car:', error);
+              Toastify({
+                text: "Error assigning car: " + error.message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                style: { background: "red" },
+                stopOnFocus: true
+              }).showToast();
+            });
   }
 </script>
 
