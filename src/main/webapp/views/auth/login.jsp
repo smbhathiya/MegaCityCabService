@@ -57,11 +57,23 @@
         input:focus {
             transition: all 0.3s ease;
         }
+        .spinner {
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-dark text-white min-h-screen flex flex-col">
 
-<!-- Navbar (Aligned with Customer/Admin Dashboard) -->
+<!-- Navbar (Unchanged) -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/95 backdrop-blur-lg z-50 shadow-md">
     <div class="container mx-auto px-6 py-4">
         <div class="flex items-center justify-between">
@@ -101,9 +113,10 @@
                        class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
                        required>
             </div>
-            <button type="submit"
-                    class="w-full bg-primary text-black py-3 rounded-full btn-primary font-semibold text-lg">
-                Login
+            <button type="submit" id="loginButton"
+                    class="w-full bg-primary text-black py-3 rounded-full btn-primary font-semibold text-lg flex items-center justify-center">
+                <span id="buttonText">Login</span>
+                <span id="loadingSpinner" class="spinner hidden"></span>
             </button>
         </form>
         <p class="mt-6 text-center text-gray-400 text-sm">
@@ -146,6 +159,14 @@
     function loginUser(event) {
         event.preventDefault();
 
+        // Show loading spinner, hide button text
+        const button = document.getElementById('loginButton');
+        const buttonText = document.getElementById('buttonText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        button.disabled = true; // Disable button to prevent multiple clicks
+        buttonText.classList.add('hidden');
+        loadingSpinner.classList.remove('hidden');
+
         let email = document.getElementById("email").value;
         let password = document.getElementById("password").value;
 
@@ -156,17 +177,13 @@
         })
             .then(response => response.json())
             .then(data => {
-                if (data.status === "success") {
-                    Toastify({
-                        text: data.message,
-                        duration: 1000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "green" },
-                        stopOnFocus: true
-                    }).showToast();
+                // Reset button state
+                button.disabled = false;
+                buttonText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
 
+                if (data.status === "success") {
+                    // Redirect based on role without toast
                     let redirectURL = "";
                     if (data.role === "admin") {
                         redirectURL = "../admin/dashboard.jsp";
@@ -177,9 +194,9 @@
                     } else {
                         redirectURL = "../index.jsp";
                     }
-
-                    setTimeout(() => window.location.href = redirectURL, 1000);
+                    window.location.href = redirectURL; // Immediate redirect
                 } else {
+                    // Show error toast
                     Toastify({
                         text: "Login Failed: " + data.message,
                         duration: 3000,
@@ -192,6 +209,11 @@
                 }
             })
             .catch(error => {
+                // Reset button state on error
+                button.disabled = false;
+                buttonText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+
                 console.error("Fetch Error:", error);
                 Toastify({
                     text: "Something went wrong.",
