@@ -96,8 +96,8 @@
                     </button>
                     <div id="profileDropdown" class="absolute right-0 mt-2 w-56 bg-dark/95 border border-white/10 rounded-xl shadow-lg hidden">
                         <div class="py-2">
-                            <a href="${pageContext.request.contextPath}/views/customer/profileUpdate.jsp" class="block px-4 py-2 text-sm text-white hover:bg-white/10">Profile</a>
-                            <button onclick="showLogoutModal()" class="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10">Logout</button>
+                            <a href="${pageContext.request.contextPath}/views/customer/profileUpdate.jsp" class="block px-4 py-2 text-sm text-white flex hover:bg-white/10 gap-2"><i data-lucide="user" class="w-5 h-5"></i>Profile</a>
+                            <button onclick="showLogoutModal()" class="w-full text-left px-4 py-2 text-sm flex text-white hover:bg-white/10 gap-2"><i data-lucide="log-out" class="w-5 h-5"></i>Logout</button>
                         </div>
                     </div>
                 </div>
@@ -135,12 +135,12 @@
         </div>
 
         <!-- Search Bar -->
-        <div class="mb-12 animate-fade-in">
-            <div class="relative max-w-2xl mx-auto">
-                <input type="text" placeholder="Search bookings..." class="w-full bg-accent rounded-full py-3 px-6 border border-white/10 text-light placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50">
-                <i data-lucide="search" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-            </div>
-        </div>
+<%--        <div class="mb-12 animate-fade-in">--%>
+<%--            <div class="relative max-w-2xl mx-auto">--%>
+<%--                <input type="text" placeholder="Search bookings..." class="w-full bg-accent rounded-full py-3 px-6 border border-white/10 text-light placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50">--%>
+<%--                <i data-lucide="search" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>--%>
+<%--            </div>--%>
+<%--        </div>--%>
 
         <!-- Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
@@ -162,29 +162,20 @@
                     <h2 class="text-xl font-semibold text-white">Booking History</h2>
                 </div>
             </a>
-            <a href="/payment" class="card p-8 animate-slide-up">
+            <a href="${pageContext.request.contextPath}/views/customer/paymentBilling.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="dollar-sign" class="w-12 h-12 text-primary mb-4"></i>
                     <h2 class="text-xl font-semibold text-white">Payment & Billing</h2>
                 </div>
             </a>
+<%--            <a href="/feedback" class="card p-8 animate-slide-up">--%>
+<%--                <div class="flex flex-col items-center text-center">--%>
+<%--                    <i data-lucide="star" class="w-12 h-12 text-primary mb-4"></i>--%>
+<%--                    <h2 class="text-xl font-semibold text-white">Rate Your Driver</h2>--%>
+<%--                </div>--%>
+<%--            </a>--%>
         </div>
 
-        <!-- Customer Support & Help -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
-            <a href="/support" class="card p-8 animate-slide-up">
-                <div class="flex flex-col items-center text-center">
-                    <i data-lucide="help-circle" class="w-12 h-12 text-primary mb-4"></i>
-                    <h2 class="text-xl font-semibold text-white">Customer Support</h2>
-                </div>
-            </a>
-            <a href="/feedback" class="card p-8 animate-slide-up">
-                <div class="flex flex-col items-center text-center">
-                    <i data-lucide="star" class="w-12 h-12 text-primary mb-4"></i>
-                    <h2 class="text-xl font-semibold text-white">Rate Your Driver</h2>
-                </div>
-            </a>
-        </div>
         <%
             } else {
                 Object userIdObj = session.getAttribute("userId");
