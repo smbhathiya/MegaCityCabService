@@ -11,7 +11,7 @@ public class Booking {
     private UUID driverId;
     private UUID carId;
     private String pickupLocation;
-    private String dropOffLocation;
+    private String dropoffLocation;
     private double distance;
     private int duration;
     private double fareEstimate;
@@ -23,6 +23,25 @@ public class Booking {
     private Date updatedAt;
     private String hireTime;
 
+    public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, double distance, String bookingStatus, double totalFare, String paymentStatus, String hireDate, String hireTime) {
+        this.id = id;
+        this.bookingNumber = bookingNumber;
+        this.customerId = customerId;
+        this.driverId = driverId;
+        this.carId = carId;
+        this.pickupLocation = pickupLocation;
+        this.dropoffLocation = dropoffLocation;
+        this.distance = distance;
+        this.bookingStatus = bookingStatus;
+        this.totalFare = totalFare;
+        this.paymentStatus = paymentStatus;
+        this.hireDate = hireDate;
+        this.hireTime = hireTime;
+    }
+
+    public Booking() {
+
+    }
     // Getters and Setters
 
     public UUID getId() {
@@ -74,11 +93,11 @@ public class Booking {
     }
 
     public String getDropOffLocation() {
-        return dropOffLocation;
+        return dropoffLocation;
     }
 
     public void setDropOffLocation(String dropOffLocation) {
-        this.dropOffLocation = dropOffLocation;
+        this.dropoffLocation = dropOffLocation;
     }
 
     public double getDistance() {
@@ -159,5 +178,9 @@ public class Booking {
 
     public void setHireTime(String hireTime) {
         this.hireTime = hireTime;
+    }
+
+    public String getDropoffLocation() {
+        return dropoffLocation;
     }
 }

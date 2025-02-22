@@ -3,6 +3,7 @@ package com.cabservice.megacitycabservice.servlet;
 import com.cabservice.megacitycabservice.dao.BookingDAO;
 import com.cabservice.megacitycabservice.dao.CarDAO;
 import com.cabservice.megacitycabservice.model.Booking;
+import com.cabservice.megacitycabservice.model.Car;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import jakarta.servlet.*;
@@ -12,6 +13,7 @@ import java.io.*;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 @WebServlet("/booking")
@@ -25,8 +27,7 @@ public class BookingServlet extends HttpServlet {
 
 
     // Add a new booking
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
@@ -39,34 +40,82 @@ public class BookingServlet extends HttpServlet {
         String requestBody = stringBuilder.toString();
         JsonObject jsonObject = gson.fromJson(requestBody, JsonObject.class);
 
-        String customerId = jsonObject.get("customer_id") != null ? jsonObject.get("customer_id").getAsString() : null;
-        String pickupLocation = jsonObject.get("pickup_location") != null ? jsonObject.get("pickup_location").getAsString() : null;
-        String dropOffLocation = jsonObject.get("dropoff_location") != null ? jsonObject.get("dropoff_location").getAsString() : null;
-        String hireDate = jsonObject.get("hire_date") != null ? jsonObject.get("hire_date").getAsString() : null;
-        String carId = jsonObject.get("car_id") != null ? jsonObject.get("car_id").getAsString() : null;
-        String driverId = jsonObject.get("driver_id") != null ? jsonObject.get("driver_id").getAsString() : null;
-        String hireTime = jsonObject.get("hire_time") != null ? jsonObject.get("hire_time").getAsString() : null;
-
-        if (customerId == null || pickupLocation == null || dropOffLocation == null || hireDate == null || carId == null || driverId == null || hireTime == null) {
-            response.getWriter().write("{\"status\": \"error\", \"message\": \"Required fields are missing.\"}");
-            return;
-        }
+        UUID customerId = UUID.fromString(jsonObject.get("customer_id").getAsString());
+        String pickupLocation = jsonObject.get("pickup_location").getAsString();
+        String dropoffLocation = jsonObject.get("dropoff_location").getAsString();
+        String hireDate = jsonObject.get("hire_date").getAsString();
+        String hireTime = jsonObject.get("hire_time").getAsString();
+        int passengerCount = jsonObject.get("passenger_count").getAsInt();
 
         try {
+            CarDAO carDAO = new CarDAO();
             BookingDAO bookingDAO = new BookingDAO();
-            boolean isBookingAdded = bookingDAO.addBooking(customerId, pickupLocation, dropOffLocation, hireDate, carId, driverId, hireTime);
 
-            if (isBookingAdded) {
-                response.getWriter().write("{\"status\": \"success\", \"message\": \"Booking added successfully!\"}");
+            // Check for available cars
+            List<Car> availableCars = carDAO.getAvailableCarsByDateAndCapacity(hireDate, passengerCount);
+            if (availableCars.isEmpty()) {
+                response.getWriter().write("{\"status\": \"error\", \"message\": \"No cars available for the selected date and passenger count.\"}");
+                return;
+            }
+
+            Car selectedCar = availableCars.get(0);
+
+            // Simulate distance (10-60 km)
+            Random random = new Random();
+            double distance = 10 + (random.nextDouble() * 50);
+
+            // Calculate price (e.g., Rs. 50 per km + Rs. 10 per passenger)
+            double totalFare = (distance * 50) + (passengerCount * 10);
+
+            String bookingNumber = "BOOK-" + String.format("%06d", random.nextInt(1000000));
+
+
+            // Create booking
+            UUID bookingId = UUID.randomUUID();
+            Booking booking = new Booking(
+                    bookingId,
+                    bookingNumber,
+                    customerId,
+                    null,
+                    selectedCar.getId(),
+                    pickupLocation,
+                    dropoffLocation,
+                    distance,
+                    "pending",
+                    totalFare,
+                    "pending",
+                    hireDate,
+                    hireTime
+            );
+
+            boolean isAdded = bookingDAO.addBooking(booking);
+            if (isAdded) {
+                // Create a simplified car details object with only needed fields
+                JsonObject carDetails = new JsonObject();
+                carDetails.addProperty("brand", selectedCar.getBrand());
+                carDetails.addProperty("model", selectedCar.getModel());
+                carDetails.addProperty("plateNumber", selectedCar.getPlateNumber());
+
+                // Build the response with all needed fields
+                JsonObject responseJson = new JsonObject();
+                responseJson.addProperty("status", "success");
+                responseJson.addProperty("bookingId", bookingId.toString());
+                responseJson.addProperty("bookingNumber", bookingNumber);
+                responseJson.add("carDetails", carDetails);
+                responseJson.addProperty("pickupLocation", pickupLocation);
+                responseJson.addProperty("dropoffLocation", dropoffLocation);
+                responseJson.addProperty("hireDate", hireDate);
+                responseJson.addProperty("hireTime", hireTime);
+                responseJson.addProperty("distance", distance);
+                responseJson.addProperty("total_fare", totalFare);
+
+                response.getWriter().write(gson.toJson(responseJson));
             } else {
-                response.getWriter().write("{\"status\": \"error\", \"message\": \"Failed to add booking.\"}");
+                response.getWriter().write("{\"status\": \"error\", \"message\": \"Failed to create booking.\"}");
             }
         } catch (SQLException e) {
-            response.getWriter().write("{\"status\": \"error\", \"message\": \"Error creating booking: " + e.getMessage() + "\"}");
-        } catch (IllegalArgumentException e) {
-            response.getWriter().write("{\"status\": \"error\", \"message\": \"Invalid input: " + e.getMessage() + "\"}");
-        } catch (Exception e) {
-            response.getWriter().write("{\"status\": \"error\", \"message\": \"Unexpected error: " + e.getMessage() + "\"}");
+            response.getWriter().write("{\"status\": \"error\", \"message\": \"Database error: " + e.getMessage() + "\"}");
+            e.printStackTrace();
         }
     }
 

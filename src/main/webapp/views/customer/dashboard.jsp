@@ -22,7 +22,7 @@
                         },
                         dark: '#1A1A1A',
                         light: '#F5F5F5',
-                        accent: '#2A2A2A' // New accent color for cards
+                        accent: '#2A2A2A'
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.5s ease-in-out',

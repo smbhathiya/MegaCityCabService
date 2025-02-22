@@ -14,8 +14,12 @@ public class Car {
     private String createdAt;
     private String updatedAt;
 
-    // Constructors
-    public Car() {
+    public Car(UUID id, String brand, String model, String plateNumber, int capacity) {
+        this.id = id;
+        this.brand = brand;
+        this.model = model;
+        this.plateNumber = plateNumber;
+        this.capacity = capacity;
     }
 
     public Car(UUID id, String plateNumber, String model, String brand, int year, String color, int capacity, String status, String createdAt, String updatedAt) {
@@ -29,6 +33,10 @@ public class Car {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public Car() {
+
     }
 
     // Getters and Setters

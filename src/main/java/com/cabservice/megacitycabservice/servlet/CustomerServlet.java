@@ -1,7 +1,6 @@
 package com.cabservice.megacitycabservice.servlet;
 
 import com.cabservice.megacitycabservice.dao.CustomerDAO;
-import com.cabservice.megacitycabservice.dao.UserDAO;
 import com.cabservice.megacitycabservice.model.Customer;
 import com.cabservice.megacitycabservice.util.PasswordUtil;
 import com.google.gson.Gson;

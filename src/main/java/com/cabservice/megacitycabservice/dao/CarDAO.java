@@ -93,4 +93,32 @@ public class CarDAO {
         }
         return cars;
     }
+
+    // Get available cars by date and capacity
+    public List<Car> getAvailableCarsByDateAndCapacity(String hireDate, int passengerCount) throws SQLException {
+        String sql = "SELECT c.id, c.brand, c.model, c.plate_number, c.capacity " +
+                "FROM cars c " +
+                "LEFT JOIN bookings b ON c.id = b.car_id AND b.hire_date = ? " +
+                "WHERE c.status = 'available' AND c.capacity >= ? AND (b.id IS NULL OR b.booking_status = 'cancelled')";
+
+        List<Car> availableCars = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, hireDate);
+            stmt.setInt(2, passengerCount);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Car car = new Car(
+                        UUID.fromString(rs.getString("id")),
+                        rs.getString("brand"),
+                        rs.getString("model"),
+                        rs.getString("plate_number"),
+                        rs.getInt("capacity")
+                );
+                availableCars.add(car);
+            }
+        }
+        return availableCars;
+    }
 }

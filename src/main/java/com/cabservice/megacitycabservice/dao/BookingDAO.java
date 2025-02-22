@@ -28,29 +28,27 @@ public class BookingDAO {
     }
 
     // Add a new booking
-    public boolean addBooking(String customerId, String pickupLocation, String dropOffLocation, String hireDate, String carId, String driverId, String hireTime) throws SQLException {
-        String bookingNumber = getNextBookingNumber(); // Fetch sequential booking number
-        String sql = "INSERT INTO bookings (id, booking_number, customer_id, pickup_location, dropoff_location, " +
-                "hire_date, booking_status, payment_status, created_at, updated_at, driver_id, car_id, hire_time,total_fare) " +
-                "VALUES (?, ?, ?, ?, ?, ?, 'pending', 'pending', NOW(), NOW(), ?, ?, ?,?)";
+    public boolean addBooking(Booking booking) throws SQLException {
+        String sql = "INSERT INTO bookings (id, booking_number, customer_id, car_id, pickup_location, dropoff_location, distance, booking_status, total_fare, payment_status, hire_date, hire_time, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setObject(1, UUID.randomUUID().toString());
-            stmt.setString(2, bookingNumber);
-            stmt.setObject(3, customerId);
-            stmt.setString(4, pickupLocation);
-            stmt.setString(5, dropOffLocation);
-            stmt.setDate(6, Date.valueOf(hireDate));
-            stmt.setString(7, driverId);
-            stmt.setString(8, carId);
-            stmt.setString(9, hireTime);
-            stmt.setString(10, "0.0");
+            stmt.setObject(1, booking.getId().toString());
+            stmt.setString(2, booking.getBookingNumber());
+            stmt.setObject(3, booking.getCustomerId().toString());
+            stmt.setObject(4, booking.getCarId() != null ? booking.getCarId().toString() : null);
+            stmt.setString(5, booking.getPickupLocation());
+            stmt.setString(6, booking.getDropoffLocation());
+            stmt.setDouble(7, booking.getDistance());
+            stmt.setString(8, booking.getBookingStatus());
+            stmt.setDouble(9, booking.getTotalFare());
+            stmt.setString(10, booking.getPaymentStatus());
+            stmt.setString(11, booking.getHireDate());
+            stmt.setString(12, booking.getHireTime());
 
             int rowsAffected = stmt.executeUpdate();
             return rowsAffected > 0;
-        } catch (SQLException e) {
-            throw new SQLException("Error inserting booking into database: " + e.getMessage(), e);
         }
     }
 
@@ -72,7 +70,9 @@ public class BookingDAO {
 
     // Get booking by booking ID
     public Booking getBookingById(String bookingId) throws SQLException {
-        String sql = "SELECT * FROM bookings WHERE id = ?";
+        String sql = "SELECT id, booking_number, customer_id, driver_id, car_id, pickup_location, dropoff_location, " +
+                "distance, booking_status, total_fare, payment_status, hire_date, hire_time, created_at, updated_at " +
+                "FROM bookings WHERE id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, bookingId);
@@ -82,7 +82,7 @@ public class BookingDAO {
                 }
             }
         }
-        return null; // If no booking found
+        return null;
     }
 
     // Get all bookings for a customer
