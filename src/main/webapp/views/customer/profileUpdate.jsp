@@ -42,6 +42,11 @@
         input[type="email"][disabled] {
             border: none;
         }
+        .form-container {
+            background: linear-gradient(135deg, rgba(42, 42, 42, 0.9), rgba(26, 26, 26, 0.8));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body class="bg-dark text-light">
@@ -81,13 +86,13 @@
 
 <!-- Main Content -->
 <div class="container mx-auto px-4 py-16">
-        <%
+    <%
         UUID customerUUID = (UUID) session.getAttribute("userId");
         String customerId = customerUUID != null ? customerUUID.toString() : null;
         if (customerId != null) {
     %>
     <div class="container mx-auto px-4 py-16 min-h-screen flex items-center justify-center">
-        <div class="max-w-lg w-full">
+        <div class="max-w-lg w-full form-container p-8 rounded-xl shadow-2xl">
             <h2 class="text-2xl font-bold text-light text-center mb-4">Update Profile</h2>
             <form id="profileForm">
                 <div class="mb-4">
@@ -111,87 +116,190 @@
             </form>
         </div>
     </div>
-        <%
-            } else {
-                Object userIdObj = session.getAttribute("userId");
-                if (userIdObj == null || !(userIdObj instanceof UUID)) {
-                    response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
-                    return;
-                }
+    <%
+        } else {
+            Object userIdObj = session.getAttribute("userId");
+            if (userIdObj == null || !(userIdObj instanceof UUID)) {
+                response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+                return;
             }
-        %>
-    </div>
+        }
+    %>
+</div>
 
-    <!-- Footer -->
-    <footer class="bg-dark/50 py-12 border-t border-white/10">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div>
-                    <h3 class="text-2xl font-bold text-white mb-2">Mega City Cabs</h3>
-                    <p class="text-gray-400">© <%= java.time.Year.now().getValue() %> All rights reserved</p>
-                </div>
-                <div class="flex gap-4 mt-4 md:mt-0">
-                    <a href="#" class="text-primary hover:text-primary-700">
-                        <i data-lucide="twitter" class="w-6 h-6"></i>
-                    </a>
-                    <a href="#" class="text-primary hover:text-primary-700">
-                        <i data-lucide="linkedin" class="w-6 h-6"></i>
-                    </a>
-                    <a href="#" class="text-primary hover:text-primary-700">
-                        <i data-lucide="github" class="w-6 h-6"></i>
-                    </a>
-                </div>
+<!-- Footer -->
+<footer class="bg-dark/50 py-12 border-t border-white/10">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-bold text-white mb-2">Mega City Cabs</h3>
+                <p class="text-gray-400">© <%= java.time.Year.now().getValue() %> All rights reserved</p>
             </div>
-        </div>
-    </footer>
-
-    <!-- Logout Confirmation Modal -->
-    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-dark p-4 rounded-lg">
-            <h3 class="text-lg font-bold text-white">Confirm Logout</h3>
-            <p class="text-gray-300">Are you sure you want to logout?</p>
-            <div class="mt-4">
-                <button onclick="confirmLogout()" class="bg-primary text-dark px-4 py-2 rounded-md hover:bg-primary-700">Yes</button>
-                <button onclick="cancelLogout()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500 ml-2">No</button>
+            <div class="flex gap-4 mt-4 md:mt-0">
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="twitter" class="w-6 h-6"></i>
+                </a>
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="linkedin" class="w-6 h-6"></i>
+                </a>
+                <a href="#" class="text-primary hover:text-primary-700">
+                    <i data-lucide="github" class="w-6 h-6"></i>
+                </a>
             </div>
         </div>
     </div>
+</footer>
 
-    <script>
-        // Initialize Lucide Icons
-        lucide.createIcons();
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-dark p-4 rounded-lg">
+        <h3 class="text-lg font-bold text-white">Confirm Logout</h3>
+        <p class="text-gray-400">Are you sure you want to logout?</p>
+        <div class="mt-4">
+            <button onclick="confirmLogout()" class="bg-primary text-dark px-4 py-2 rounded-md hover:bg-primary-700">Yes</button>
+            <button onclick="cancelLogout()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500 ml-2">No</button>
+        </div>
+    </div>
+</div>
 
-        // Toggle Profile Dropdown
-        function toggleProfileDropdown() {
-            const dropdown = document.getElementById('profileDropdown');
-            dropdown.classList.toggle('hidden');
-        }
+<script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
 
-        // Show logout confirmation modal
-        function showLogoutModal() {
-            document.getElementById('logoutModal').classList.remove('hidden');
-        }
+    // Toggle Profile Dropdown
+    function toggleProfileDropdown() {
+        const dropdown = document.getElementById('profileDropdown');
+        dropdown.classList.toggle('hidden');
+    }
 
-        // Hide logout confirmation modal
-        function cancelLogout() {
-            document.getElementById('logoutModal').classList.add('hidden');
-        }
+    // Show logout confirmation modal
+    function showLogoutModal() {
+        document.getElementById('logoutModal').classList.remove('hidden');
+    }
 
-        // Confirm logout and perform the action
-        function confirmLogout() {
-            fetch('${pageContext.request.contextPath}/logout', {
-                method: 'POST',
+    // Hide logout confirmation modal
+    function cancelLogout() {
+        document.getElementById('logoutModal').classList.add('hidden');
+    }
+
+    // Confirm logout and perform the action
+    function confirmLogout() {
+        fetch('${pageContext.request.contextPath}/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    window.location.href = "../index.jsp";
+                } else {
+                    Toastify({
+                        text: "Logout failed: " + data.message,
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        style: { background: "red" },
+                        stopOnFocus: true
+                    }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Toastify({
+                    text: 'An unexpected error occurred during logout.',
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "red" },
+                    stopOnFocus: true
+                }).showToast();
+            });
+    }
+
+    // Fetch customer data
+    function fetchCustomerData() {
+        fetch('${pageContext.request.contextPath}/customer?id=' + '<%= customerId %>', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== "error") {
+                    document.getElementById('name').value = data.name;
+                    document.getElementById('email').value = data.email;
+                    document.getElementById('contactNo').value = data.contactNo;
+                    document.getElementById('address').value = data.address;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching customer data:', error);
+            });
+    }
+
+    // DOM Content Loaded Event Listener
+    document.addEventListener("DOMContentLoaded", function () {
+        // Fetch data on page load
+        fetchCustomerData();
+
+        // Edit button click handler
+        document.getElementById('editButton').addEventListener('click', function () {
+            let editables = document.querySelectorAll('.editable');
+            editables.forEach(input => {
+                input.disabled = false;
+                input.classList.add('editing'); // Show borders
+            });
+            document.getElementById('editButton').classList.add('hidden');
+            document.getElementById('updateButton').classList.remove('hidden');
+        });
+
+        // Form submission handler
+        document.getElementById('profileForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            let jsonObject = {
+                id: '<%= customerId %>',
+                name: document.getElementById('name').value,
+                contact_no: document.getElementById('contactNo').value,
+                address: document.getElementById('address').value
+            };
+
+            fetch('${pageContext.request.contextPath}/customer', {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify(jsonObject)
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "success") {
-                        window.location.href = "../index.jsp";
+                        Toastify({
+                            text: "Profile updated successfully!",
+                            duration: 1500,
+                            close: true,
+                            gravity: "top",
+                            position: "right",
+                            style: { background: "green" },
+                            stopOnFocus: true
+                        }).showToast();
+
+                        // Reset form to view mode
+                        let editables = document.querySelectorAll('.editable');
+                        editables.forEach(input => {
+                            input.disabled = true;
+                            input.classList.remove('editing'); // Hide borders
+                        });
+                        document.getElementById('editButton').classList.remove('hidden');
+                        document.getElementById('updateButton').classList.add('hidden');
                     } else {
                         Toastify({
-                            text: "Logout failed: " + data.message,
+                            text: "Update failed: " + data.message,
                             duration: 3000,
                             close: true,
                             gravity: "top",
@@ -202,9 +310,9 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Error updating profile:', error);
                     Toastify({
-                        text: 'An unexpected error occurred during logout.',
+                        text: "Something went wrong. Please try again.",
                         duration: 3000,
                         close: true,
                         gravity: "top",
@@ -213,112 +321,9 @@
                         stopOnFocus: true
                     }).showToast();
                 });
-        }
-
-        // Fetch customer data
-        function fetchCustomerData() {
-            fetch('${pageContext.request.contextPath}/customer?id=' + '<%= customerId %>', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status !== "error") {
-                        document.getElementById('name').value = data.name;
-                        document.getElementById('email').value = data.email;
-                        document.getElementById('contactNo').value = data.contactNo;
-                        document.getElementById('address').value = data.address;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching customer data:', error);
-                });
-        }
-
-        // DOM Content Loaded Event Listener
-        document.addEventListener("DOMContentLoaded", function () {
-            // Fetch data on page load
-            fetchCustomerData();
-
-            // Edit button click handler
-            document.getElementById('editButton').addEventListener('click', function () {
-                let editables = document.querySelectorAll('.editable');
-                editables.forEach(input => {
-                    input.disabled = false;
-                    input.classList.add('editing'); // Show borders
-                });
-                document.getElementById('editButton').classList.add('hidden');
-                document.getElementById('updateButton').classList.remove('hidden');
-            });
-
-            // Form submission handler
-            document.getElementById('profileForm').addEventListener('submit', function (e) {
-                e.preventDefault();
-
-                let jsonObject = {
-                    id: '<%= customerId %>',
-                    name: document.getElementById('name').value,
-                    contact_no: document.getElementById('contactNo').value,
-                    address: document.getElementById('address').value
-                };
-
-                fetch('${pageContext.request.contextPath}/customer', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(jsonObject)
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === "success") {
-                            Toastify({
-                                text: "Profile updated successfully!",
-                                duration: 1500,
-                                close: true,
-                                gravity: "top",
-                                position: "right",
-                                style: { background: "green" },
-                                stopOnFocus: true
-                            }).showToast();
-
-                            // Reset form to view mode
-                            let editables = document.querySelectorAll('.editable');
-                            editables.forEach(input => {
-                                input.disabled = true;
-                                input.classList.remove('editing'); // Hide borders
-                            });
-                            document.getElementById('editButton').classList.remove('hidden');
-                            document.getElementById('updateButton').classList.add('hidden');
-                        } else {
-                            Toastify({
-                                text: "Update failed: " + data.message,
-                                duration: 3000,
-                                close: true,
-                                gravity: "top",
-                                position: "right",
-                                style: { background: "red" },
-                                stopOnFocus: true
-                            }).showToast();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error updating profile:', error);
-                        Toastify({
-                            text: "Something went wrong. Please try again.",
-                            duration: 3000,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "red" },
-                            stopOnFocus: true
-                        }).showToast();
-                    });
-            });
         });
-    </script>
+    });
+</script>
 
 </body>
 </html>
