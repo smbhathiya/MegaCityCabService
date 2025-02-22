@@ -51,7 +51,7 @@ public class BookingConfirmServlet extends HttpServlet {
 
                 if (rowsAffected > 0) {
                     responseJson.addProperty("status", "success");
-                    responseJson.addProperty("message", "Booking " + status + " successfully!");
+                    responseJson.addProperty("message", "Update successful");
                 } else {
                     responseJson.addProperty("status", "error");
                     responseJson.addProperty("message", "Booking not found or update failed.");

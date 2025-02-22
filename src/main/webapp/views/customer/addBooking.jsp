@@ -258,7 +258,7 @@
                     document.getElementById('hireDate').innerText = data.hireDate;
                     document.getElementById('hireTime').innerText = data.hireTime;
                     document.getElementById('distance').innerText = data.distance.toFixed(2) + ' km';
-                    document.getElementById('totalFare').innerText = 'Rs. '+ data.total_fare.toFixed(2);
+                    document.getElementById('totalFare').innerText = 'Rs. ' + data.total_fare.toFixed(2);
 
                     document.getElementById('bookingModal').dataset.bookingId = data.bookingId;
                     document.getElementById('bookingModal').classList.remove('hidden');
@@ -304,7 +304,7 @@
                 console.log('Parsed Confirm Response:', data);
                 if (data.status === 'success') {
                     Toastify({
-                        text: `Booking ${status == 'confirmed' ? 'confirmed' : 'cancelled'} successfully!`,
+                        text: `Booking ${status} successfully!`,
                         duration: 3000,
                         close: true,
                         gravity: "top",
