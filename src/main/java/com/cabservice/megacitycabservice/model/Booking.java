@@ -22,6 +22,7 @@ public class Booking {
     private Date createdAt;
     private Date updatedAt;
     private String hireTime;
+    private Car carDetails;
 
     public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, double distance, String bookingStatus, double totalFare, String paymentStatus, String hireDate, String hireTime) {
         this.id = id;
@@ -180,7 +181,8 @@ public class Booking {
         this.hireTime = hireTime;
     }
 
-    public String getDropoffLocation() {
-        return dropoffLocation;
-    }
+    public String getDropoffLocation() {return dropoffLocation;}
+
+    public Car getCarDetails() { return carDetails; }
+    public void setCarDetails(Car carDetails) { this.carDetails = carDetails; }
 }

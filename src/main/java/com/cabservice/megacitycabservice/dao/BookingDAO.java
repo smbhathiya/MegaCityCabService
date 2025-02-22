@@ -1,6 +1,7 @@
 package com.cabservice.megacitycabservice.dao;
 
 import com.cabservice.megacitycabservice.model.Booking;
+import com.cabservice.megacitycabservice.model.Car;
 import com.cabservice.megacitycabservice.util.DBUtil;
 
 import java.sql.*;
@@ -87,14 +88,42 @@ public class BookingDAO {
 
     // Get all bookings for a customer
     public List<Booking> getBookingsByCustomerId(String customerId) throws SQLException {
-        String sql = "SELECT * FROM bookings WHERE customer_id = ?";
         List<Booking> bookings = new ArrayList<>();
+        String sql = "SELECT b.id, b.booking_number, b.customer_id, b.car_id, b.pickup_location, b.dropoff_location, " +
+                "b.distance, b.booking_status, b.total_fare, b.payment_status, b.hire_date, b.hire_time, " +
+                "c.brand, c.model, c.plate_number " +
+                "FROM bookings b " +
+                "LEFT JOIN cars c ON b.car_id = c.id " +
+                "WHERE b.customer_id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, customerId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    bookings.add(mapToBooking(rs));
+                    Booking booking = new Booking();
+                    booking.setId(UUID.fromString(rs.getString("id")));
+                    booking.setBookingNumber(rs.getString("booking_number"));
+                    booking.setCustomerId(UUID.fromString(rs.getString("customer_id")));
+                    booking.setCarId(rs.getString("car_id") != null ? UUID.fromString(rs.getString("car_id")) : null);
+                    booking.setPickupLocation(rs.getString("pickup_location"));
+                    booking.setDropOffLocation(rs.getString("dropoff_location"));
+                    booking.setDistance(rs.getDouble("distance"));
+                    booking.setBookingStatus(rs.getString("booking_status"));
+                    booking.setTotalFare(rs.getDouble("total_fare"));
+                    booking.setPaymentStatus(rs.getString("payment_status"));
+                    booking.setHireDate(rs.getString("hire_date"));
+                    booking.setHireTime(rs.getString("hire_time"));
+
+                    // Car Details
+                    if (rs.getString("car_id") != null) {
+                        Car car = new Car();
+                        car.setBrand(rs.getString("brand"));
+                        car.setModel(rs.getString("model"));
+                        car.setPlateNumber(rs.getString("plate_number"));
+                        booking.setCarDetails(car);
+                    }
+
+                    bookings.add(booking);
                 }
             }
         }
