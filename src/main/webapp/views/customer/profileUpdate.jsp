@@ -86,9 +86,9 @@
         String customerId = customerUUID != null ? customerUUID.toString() : null;
         if (customerId != null) {
     %>
-    <div class="container mx-auto px-4 py-16 flex flex-col md:flex-row justify-center md:justify-start">
-        <div class="max-w-lg w-full md:w-1/2">
-            <h2 class="text-2xl font-bold text-light mb-4">Update Profile</h2>
+    <div class="container mx-auto px-4 py-16 min-h-screen flex items-center justify-center">
+        <div class="max-w-lg w-full">
+            <h2 class="text-2xl font-bold text-light text-center mb-4">Update Profile</h2>
             <form id="profileForm">
                 <div class="mb-4">
                     <label for="name" class="block text-sm font-medium text-light">Name</label>
@@ -110,6 +110,7 @@
                 <button type="submit" id="updateButton" class="w-full bg-primary text-dark p-2 rounded-md hover:bg-primary-700 transition hidden">Update Profile</button>
             </form>
         </div>
+    </div>
         <%
             } else {
                 Object userIdObj = session.getAttribute("userId");
