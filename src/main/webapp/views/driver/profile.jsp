@@ -21,7 +21,22 @@
                             700: '#CC9F02'
                         },
                         dark: '#1A1A1A',
-                        light: '#F5F5F5'
+                        light: '#F5F5F5',
+                        accent: '#2A2A2A'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        }
                     }
                 }
             }
@@ -30,7 +45,26 @@
     <style>
         body {
             background-color: #1A1A1A;
-            color: white;
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: #2A2A2A;
+            border-radius: 1rem;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+        .card div {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center icons and text horizontally */
+            justify-content: center; /* Center vertically */
+            text-decoration: none;
+            color: inherit;
+            height: 100%; /* Ensure content takes full card height */
         }
         .editable {
             background-color: rgba(255, 255, 255, 0.1);
@@ -42,31 +76,26 @@
         input[type="email"][disabled] {
             border: none;
         }
-        .form-container {
+        .modal-content {
             background: linear-gradient(135deg, rgba(42, 42, 42, 0.9), rgba(26, 26, 26, 0.8));
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .btn-primary {
             transition: transform 0.2s ease, background-color 0.3s ease;
-            color: #F5F5F5; /* White text for primary buttons */
+            color: #F5F5F5;
         }
         .btn-primary:hover {
             transform: translateY(-2px);
         }
-        #editButton {
-            color: #F5F5F5; /* White text for Edit button */
-        }
-        #changePasswordButton {
-            background-color: #FCC603; /* Yellow background for Change Password button */
-            color: #F5F5F5; /* White text */
-        }
-        #changePasswordButton:hover {
-            background-color: #CC9F02; /* Darker yellow on hover */
-        }
         #passwordModal input {
-            border: 1px solid #FCC603; /* Primary color border for password textboxes */
+            border: 1px solid #FCC603;
             background-color: rgba(255, 255, 255, 0.1);
+        }
+        .cards-container {
+            display: flex;
+            justify-content: flex-start; /* Align cards to the left */
+            max-width: 2xl; /* Maintain max width */
         }
     </style>
 </head>
@@ -104,34 +133,29 @@
 </nav>
 
 <!-- Main Content -->
-<div class="container mx-auto px-4 py-16">
+<div class="container mx-auto px-4 py-16 min-h-screen flex items-center">
     <%
         UUID driverUUID = (UUID) session.getAttribute("userId");
         String driverId = driverUUID != null ? driverUUID.toString() : null;
         if (driverId != null) {
     %>
-    <div class="container mx-auto px-4 py-16 min-h-screen flex items-center justify-center">
-        <div class="max-w-lg w-full form-container p-8 rounded-xl shadow-2xl">
-            <h2 class="text-2xl font-bold text-light text-center mb-4">Update Driver Profile</h2>
-            <form id="profileForm">
-                <div class="mb-4">
-                    <label for="name" class="block text-sm font-medium text-light">Name</label>
-                    <input type="text" id="name" name="name" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
+    <div class="cards-container w-full">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <!-- Update Profile Card -->
+            <div class="card p-8 animate-slide-up" onclick="showProfileModal()">
+                <div>
+                    <i data-lucide="user" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">Update Profile</h2>
                 </div>
-                <div class="mb-4">
-                    <label for="email" class="block text-sm font-medium text-light">Email</label>
-                    <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
+            </div>
+
+            <!-- Update Password Card -->
+            <div class="card p-8 animate-slide-up" onclick="showPasswordModal()">
+                <div>
+                    <i data-lucide="lock" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">Update Password</h2>
                 </div>
-                <div class="mb-4">
-                    <label for="licenseNumber" class="block text-sm font-medium text-light">License Number</label>
-                    <input type="text" id="licenseNumber" name="licenseNumber" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
-                </div>
-                <div class="flex gap-4">
-                    <button type="button" id="editButton" class="w-full bg-red-700 text-dark p-2 rounded-md hover:bg-red-500 transition">Edit</button>
-                    <button type="submit" id="updateButton" class="w-full bg-primary text-dark p-2 rounded-md hover:bg-primary-700 transition hidden">Update Profile</button>
-                </div>
-                <button type="button" id="changePasswordButton" class="w-full bg-blue-700 text-dark p-2 rounded-md hover:bg-blue-500 transition mt-4">Change Password</button>
-            </form>
+            </div>
         </div>
     </div>
     <%
@@ -174,29 +198,53 @@
         <h3 class="text-lg font-bold text-white">Confirm Logout</h3>
         <p class="text-gray-400">Are you sure you want to logout?</p>
         <div class="mt-4">
-            <button onclick="confirmLogout()" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-700">Yes</button>
+            <button onclick="confirmLogout()" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-700 btn-primary">Yes</button>
             <button onclick="cancelLogout()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500 ml-2">No</button>
         </div>
     </div>
 </div>
 
+<!-- Profile Update Modal -->
+<div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="modal-content p-6 rounded-xl shadow-2xl max-w-md w-full">
+        <h3 class="text-xl font-bold text-white mb-4">Update Profile</h3>
+        <form id="profileForm">
+            <div class="mb-4">
+                <label for="name" class="block text-sm font-medium text-light">Name</label>
+                <input type="text" id="name" name="name" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
+            </div>
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-medium text-light">Email</label>
+                <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
+            </div>
+            <div class="mb-4">
+                <label for="licenseNumber" class="block text-sm font-medium text-light">License Number</label>
+                <input type="text" id="licenseNumber" name="licenseNumber" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
+            </div>
+            <div class="flex gap-4">
+                <button type="button" id="editButton" class="w-full bg-red-700 text-white p-2 rounded-md hover:bg-red-500 transition btn-primary">Edit</button>
+                <button type="submit" id="updateButton" class="w-full bg-primary text-white p-2 rounded-md hover:bg-primary-700 transition btn-primary hidden">Update Profile</button>
+            </div>
+            <button type="button" onclick="closeProfileModal()" class="w-full bg-gray-600 text-white p-2 rounded-md hover:bg-gray-500 mt-4">Close</button>
+        </form>
+    </div>
+</div>
+
 <!-- Password Change Modal -->
 <div id="passwordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-dark p-6 rounded-lg max-w-md w-full">
+    <div class="modal-content p-6 rounded-xl shadow-2xl max-w-md w-full">
         <h3 class="text-lg font-bold text-white mb-4">Change Password</h3>
         <form id="passwordForm">
             <div class="mb-4">
                 <label for="oldPassword" class="block text-sm font-medium text-light">Previous Password</label>
-                <input type="password" id="oldPassword" name="oldPassword" required
-                       class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light">
+                <input type="password" id="oldPassword" name="oldPassword" required class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light">
             </div>
             <div class="mb-4">
                 <label for="newPassword" class="block text-sm font-medium text-light">New Password</label>
-                <input type="password" id="newPassword" name="newPassword" required
-                       class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light">
+                <input type="password" id="newPassword" name="newPassword" required class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light">
             </div>
             <div class="flex gap-4 justify-end">
-                <button type="submit" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-700">Update Password</button>
+                <button type="submit" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-700 btn-primary">Update Password</button>
                 <button type="button" onclick="closePasswordModal()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500">Cancel</button>
             </div>
         </form>
@@ -209,23 +257,18 @@
 
     // Toggle Profile Dropdown
     function toggleProfileDropdown() {
-        const dropdown = document.getElementById('profileDropdown');
-        dropdown.classList.toggle('hidden');
+        document.getElementById('profileDropdown').classList.toggle('hidden');
     }
 
-    // Show logout confirmation modal
+    // Show/hide logout confirmation modal
     function showLogoutModal() {
         document.getElementById('logoutModal').classList.remove('hidden');
     }
-
-    // Hide logout confirmation modal
     function cancelLogout() {
         document.getElementById('logoutModal').classList.add('hidden');
     }
-
-    // Confirm logout and perform the action
     function confirmLogout() {
-        fetch('${pageContext.request.contextPath}/logout', {
+        fetch('<%= request.getContextPath() %>/logout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         })
@@ -297,12 +340,26 @@
             });
     }
 
-    // Show password change modal
+    // Show/hide profile update modal
+    function showProfileModal() {
+        document.getElementById('profileModal').classList.remove('hidden');
+        fetchDriverData(); // Refresh data when modal opens
+    }
+    function closeProfileModal() {
+        document.getElementById('profileModal').classList.add('hidden');
+        let editables = document.querySelectorAll('.editable');
+        editables.forEach(input => {
+            input.disabled = true;
+            input.classList.remove('editing');
+        });
+        document.getElementById('editButton').classList.remove('hidden');
+        document.getElementById('updateButton').classList.add('hidden');
+    }
+
+    // Show/hide password change modal
     function showPasswordModal() {
         document.getElementById('passwordModal').classList.remove('hidden');
     }
-
-    // Hide password change modal
     function closePasswordModal() {
         document.getElementById('passwordModal').classList.add('hidden');
         document.getElementById('passwordForm').reset();
@@ -310,9 +367,6 @@
 
     // DOM Content Loaded Event Listener
     document.addEventListener("DOMContentLoaded", function () {
-        // Fetch data on page load
-        fetchDriverData();
-
         // Edit button click handler
         document.getElementById('editButton').addEventListener('click', function () {
             let editables = document.querySelectorAll('.editable');
@@ -324,7 +378,7 @@
             document.getElementById('updateButton').classList.remove('hidden');
         });
 
-        // Form submission handler for profile update
+        // Profile form submission handler
         document.getElementById('profileForm').addEventListener('submit', function (e) {
             e.preventDefault();
 
@@ -352,14 +406,7 @@
                             style: { background: "green" },
                             stopOnFocus: true
                         }).showToast();
-
-                        let editables = document.querySelectorAll('.editable');
-                        editables.forEach(input => {
-                            input.disabled = true;
-                            input.classList.remove('editing');
-                        });
-                        document.getElementById('editButton').classList.remove('hidden');
-                        document.getElementById('updateButton').classList.add('hidden');
+                        closeProfileModal();
                     } else {
                         Toastify({
                             text: "Update failed: " + data.message,
@@ -385,9 +432,6 @@
                     }).showToast();
                 });
         });
-
-        // Change password button handler
-        document.getElementById('changePasswordButton').addEventListener('click', showPasswordModal);
 
         // Password form submission handler
         document.getElementById('passwordForm').addEventListener('submit', function (e) {
