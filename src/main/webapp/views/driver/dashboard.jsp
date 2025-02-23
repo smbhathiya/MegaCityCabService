@@ -160,13 +160,7 @@
                     <h2 class="text-xl font-semibold text-white">Booking Management</h2>
                 </div>
             </a>
-            <a href="/ride-tracking" class="card p-8 animate-slide-up">
-                <div class="flex flex-col items-center text-center">
-                    <i data-lucide="map-pin" class="w-12 h-12 text-primary mb-4"></i>
-                    <h2 class="text-xl font-semibold text-white">Ride Tracking</h2>
-                </div>
-            </a>
-            <a href="/payments" class="card p-8 animate-slide-up">
+            <a href="${pageContext.request.contextPath}/views/driver/payments.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="dollar-sign" class="w-12 h-12 text-primary mb-4"></i>
                     <h2 class="text-xl font-semibold text-white">Payments</h2>
