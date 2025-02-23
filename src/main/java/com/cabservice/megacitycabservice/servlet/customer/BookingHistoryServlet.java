@@ -1,4 +1,4 @@
-package com.cabservice.megacitycabservice.servlet;
+package com.cabservice.megacitycabservice.servlet.customer;
 
 import com.cabservice.megacitycabservice.dao.BookingDAO;
 import com.cabservice.megacitycabservice.model.Booking;

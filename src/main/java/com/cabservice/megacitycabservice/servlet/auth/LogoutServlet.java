@@ -1,6 +1,5 @@
-package com.cabservice.megacitycabservice.servlet;
+package com.cabservice.megacitycabservice.servlet.auth;
 
-import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;

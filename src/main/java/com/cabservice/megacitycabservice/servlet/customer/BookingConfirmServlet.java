@@ -1,4 +1,4 @@
-package com.cabservice.megacitycabservice.servlet;
+package com.cabservice.megacitycabservice.servlet.customer;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

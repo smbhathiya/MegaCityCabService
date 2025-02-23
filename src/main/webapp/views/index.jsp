@@ -113,7 +113,7 @@
                 <div class="flex items-center gap-6">
                     <%
                         Object userIdObj = session.getAttribute("userId");
-                        String role = (String) session.getAttribute("userRole");
+                        String role = (String) session.getAttribute("role");
                         if (userIdObj == null || !(userIdObj instanceof UUID)) {
                     %>
                     <a href="${pageContext.request.contextPath}/views/customer/customerRegister.jsp"

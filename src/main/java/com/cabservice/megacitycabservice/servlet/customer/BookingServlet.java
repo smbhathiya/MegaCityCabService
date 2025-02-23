@@ -1,4 +1,4 @@
-package com.cabservice.megacitycabservice.servlet;
+package com.cabservice.megacitycabservice.servlet.customer;
 
 import com.cabservice.megacitycabservice.dao.BookingDAO;
 import com.cabservice.megacitycabservice.dao.CarDAO;
@@ -10,7 +10,6 @@ import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.*;
-import java.sql.Date;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Random;

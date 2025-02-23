@@ -138,12 +138,13 @@
         </div>
 
         <!-- Search Bar -->
-        <div class="mb-12 animate-fade-in">
-            <div class="relative max-w-2xl mx-auto">
-                <input type="text" placeholder="Search bookings..." class="w-full bg-accent rounded-full py-3 px-6 border border-white/10 text-light placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50">
-                <i data-lucide="search" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-            </div>
-        </div>
+<%--        <div class="mb-12 animate-fade-in">--%>
+<%--            <div class="relative max-w-2xl mx-auto">--%>
+<%--                <input type="text" placeholder="Search bookings..." class="w-full bg-accent rounded-full py-3 px-6 border border-white/10 text-light placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50">--%>
+<%--                <i data-lucide="search" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>--%>
+<%--            </div>--%>
+<%--        </div>--%>
+<%--        --%>
 
         <!-- Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
@@ -153,7 +154,7 @@
                     <h2 class="text-xl font-semibold text-white">Privacy Settings</h2>
                 </div>
             </a>
-            <a href="/bookings" class="card p-8 animate-slide-up">
+            <a href="${pageContext.request.contextPath}/views/driver/booking.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="calendar" class="w-12 h-12 text-primary mb-4"></i>
                     <h2 class="text-xl font-semibold text-white">Booking Management</h2>

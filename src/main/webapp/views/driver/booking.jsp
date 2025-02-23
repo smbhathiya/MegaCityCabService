@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Profile - Mega City Cabs</title>
+    <title>Driver Booking Management - Mega City Cabs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="https://unpkg.com/toastify-js/src/toastify.css">
@@ -51,30 +51,10 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             background-color: #2A2A2A;
             border-radius: 1rem;
-            cursor: pointer;
         }
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-        }
-        .card div {
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Center icons and text horizontally */
-            justify-content: center; /* Center vertically */
-            text-decoration: none;
-            color: inherit;
-            height: 100%; /* Ensure content takes full card height */
-        }
-        .editable {
-            background-color: rgba(255, 255, 255, 0.1);
-            border: none;
-        }
-        .editable.editing {
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        input[type="email"][disabled] {
-            border: none;
         }
         .modal-content {
             background: linear-gradient(135deg, rgba(42, 42, 42, 0.9), rgba(26, 26, 26, 0.8));
@@ -88,14 +68,22 @@
         .btn-primary:hover {
             transform: translateY(-2px);
         }
-        #passwordModal input {
-            border: 1px solid #FCC603;
-            background-color: rgba(255, 255, 255, 0.1);
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #F5F5F5;
         }
-        .cards-container {
-            display: flex;
-            justify-content: flex-start; /* Align cards to the left */
-            max-width: 2xl; /* Maintain max width */
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        th {
+            background-color: #2A2A2A;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
         }
     </style>
 </head>
@@ -110,7 +98,7 @@
                     <i data-lucide="car" class="w-8 h-8 text-primary"></i>
                     <div>
                         <span class="text-2xl font-bold text-light">Mega City Cabs</span>
-                        <p class="text-sm text-light/70">Driver Privacy Settings</p>
+                        <p class="text-sm text-light/70">Driver Dashboard</p>
                     </div>
                 </a>
             </div>
@@ -133,30 +121,29 @@
 </nav>
 
 <!-- Main Content -->
-<div class="container mx-auto px-4 py-16 min-h-screen flex items-center">
+<div class="container mx-auto px-4 py-16 min-h-screen">
     <%
         UUID driverUUID = (UUID) session.getAttribute("userId");
         String driverId = driverUUID != null ? driverUUID.toString() : null;
         if (driverId != null) {
     %>
-    <div class="cards-container w-full">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <!-- Update Profile Card -->
-            <div class="card p-8 animate-slide-up" onclick="showProfileModal()">
-                <div>
-                    <i data-lucide="user" class="w-12 h-12 text-primary mb-4"></i>
-                    <h2 class="text-xl font-semibold text-white">Update Profile</h2>
-                </div>
-            </div>
-
-            <!-- Update Password Card -->
-            <div class="card p-8 animate-slide-up" onclick="showPasswordModal()">
-                <div>
-                    <i data-lucide="lock" class="w-12 h-12 text-primary mb-4"></i>
-                    <h2 class="text-xl font-semibold text-white">Update Password</h2>
-                </div>
-            </div>
-        </div>
+    <h2 class="text-3xl font-bold text-white mb-8">Booking Management</h2>
+    <div class="card p-6 animate-slide-up">
+        <table id="bookingsTable">
+            <thead>
+            <tr>
+                <th>Booking Number</th>
+                <th>Pickup Location</th>
+                <th>Drop-off Location</th>
+                <th>Hire Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="bookingsBody">
+            <!-- Bookings will be populated here via JavaScript -->
+            </tbody>
+        </table>
     </div>
     <%
         } else {
@@ -204,50 +191,17 @@
     </div>
 </div>
 
-<!-- Profile Update Modal -->
-<div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+<!-- Booking Details Modal -->
+<div id="bookingDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="modal-content p-6 rounded-xl shadow-2xl max-w-md w-full">
-        <h3 class="text-xl font-bold text-white mb-4">Update Profile</h3>
-        <form id="profileForm">
-            <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-light">Name</label>
-                <input type="text" id="name" name="name" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
-            </div>
-            <div class="mb-4">
-                <label for="email" class="block text-sm font-medium text-light">Email</label>
-                <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
-            </div>
-            <div class="mb-4">
-                <label for="licenseNumber" class="block text-sm font-medium text-light">License Number</label>
-                <input type="text" id="licenseNumber" name="licenseNumber" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
-            </div>
-            <div class="flex gap-4">
-                <button type="button" id="editButton" class="w-full bg-red-700 text-white p-2 rounded-md hover:bg-red-500 transition btn-primary">Edit</button>
-                <button type="submit" id="updateButton" class="w-full bg-primary text-white p-2 rounded-md hover:bg-primary-700 transition btn-primary hidden">Update Profile</button>
-            </div>
-            <button type="button" onclick="closeProfileModal()" class="w-full bg-gray-600 text-white p-2 rounded-md hover:bg-gray-500 mt-4">Close</button>
-        </form>
-    </div>
-</div>
-
-<!-- Password Change Modal -->
-<div id="passwordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-    <div class="modal-content p-6 rounded-xl shadow-2xl max-w-md w-full">
-        <h3 class="text-lg font-bold text-white mb-4">Change Password</h3>
-        <form id="passwordForm">
-            <div class="mb-4">
-                <label for="oldPassword" class="block text-sm font-medium text-light">Previous Password</label>
-                <input type="password" id="oldPassword" name="oldPassword" required class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light">
-            </div>
-            <div class="mb-4">
-                <label for="newPassword" class="block text-sm font-medium text-light">New Password</label>
-                <input type="password" id="newPassword" name="newPassword" required class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light">
-            </div>
-            <div class="flex gap-4 justify-end">
-                <button type="submit" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-700 btn-primary">Update Password</button>
-                <button type="button" onclick="closePasswordModal()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500">Cancel</button>
-            </div>
-        </form>
+        <h3 class="text-xl font-bold text-white mb-4">Booking Details</h3>
+        <div id="bookingDetailsContent" class="text-gray-300 mb-6">
+            <!-- Booking details will be populated here -->
+        </div>
+        <div class="flex gap-4">
+            <button id="updateStatusButton" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-700 btn-primary">Update Status</button>
+            <button onclick="closeBookingDetailsModal()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500">Close</button>
+        </div>
     </div>
 </div>
 
@@ -302,21 +256,32 @@
             });
     }
 
-    // Fetch driver data
-    function fetchDriverData() {
-        fetch('${pageContext.request.contextPath}/driver?id=' + '<%= driverId %>', {
+    // Fetch bookings for the driver
+    function fetchBookings() {
+        fetch('<%= request.getContextPath() %>/driver/bookings?id=' + '<%= driverId %>', {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         })
             .then(response => response.json())
             .then(data => {
                 if (data.status !== "error") {
-                    document.getElementById('name').value = data.name || '';
-                    document.getElementById('email').value = data.email || '';
-                    document.getElementById('licenseNumber').value = data.licenseNumber || '';
+                    const tbody = document.getElementById('bookingsBody');
+                    tbody.innerHTML = '';
+                    data.bookings.forEach(booking => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${booking.bookingNumber}</td>
+                            <td>${booking.pickupLocation}</td>
+                            <td>${booking.dropoffLocation}</td>
+                            <td>${booking.hireDate}</td>
+                            <td>${booking.bookingStatus}</td>
+                            <td><button class="bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-700 btn-primary" onclick='showBookingDetails("${booking.id}")'>View</button></td>
+                        `;
+                        tbody.appendChild(row);
+                    });
                 } else {
                     Toastify({
-                        text: "Failed to fetch driver data: " + data.message,
+                        text: "Failed to fetch bookings: " + data.message,
                         duration: 3000,
                         close: true,
                         gravity: "top",
@@ -327,9 +292,9 @@
                 }
             })
             .catch(error => {
-                console.error('Error fetching driver data:', error);
+                console.error('Error fetching bookings:', error);
                 Toastify({
-                    text: "Error fetching driver data.",
+                    text: "Error fetching bookings.",
                     duration: 3000,
                     close: true,
                     gravity: "top",
@@ -340,152 +305,122 @@
             });
     }
 
-    // Show/hide profile update modal
-    function showProfileModal() {
-        document.getElementById('profileModal').classList.remove('hidden');
-        fetchDriverData(); // Refresh data when modal opens
-    }
-    function closeProfileModal() {
-        document.getElementById('profileModal').classList.add('hidden');
-        let editables = document.querySelectorAll('.editable');
-        editables.forEach(input => {
-            input.disabled = true;
-            input.classList.remove('editing');
-        });
-        document.getElementById('editButton').classList.remove('hidden');
-        document.getElementById('updateButton').classList.add('hidden');
+    // Show booking details modal
+    function showBookingDetails(bookingId) {
+        fetch('<%= request.getContextPath() %>/driver/bookings/details?id=' + bookingId, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== "error") {
+                    const content = document.getElementById('bookingDetailsContent');
+                    content.innerHTML = `
+                        <p><strong>Booking Number:</strong> ${data.bookingNumber}</p>
+                        <p><strong>Pickup Location:</strong> ${data.pickupLocation}</p>
+                        <p><strong>Drop-off Location:</strong> ${data.dropoffLocation}</p>
+                        <p><strong>Hire Date:</strong> ${data.hireDate}</p>
+                        <p><strong>Hire Time:</strong> ${data.hireTime}</p>
+                        <p><strong>Status:</strong> ${data.bookingStatus}</p>
+                        <p><strong>Distance:</strong> ${data.distance} km</p>
+                        <p><strong>Total Fare:</strong> Rs. ${data.totalFare}</p>
+                    `;
+                    document.getElementById('updateStatusButton').onclick = () => updateBookingStatus(bookingId);
+                    document.getElementById('bookingDetailsModal').classList.remove('hidden');
+                } else {
+                    Toastify({
+                        text: "Failed to fetch booking details: " + data.message,
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        style: { background: "red" },
+                        stopOnFocus: true
+                    }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching booking details:', error);
+                Toastify({
+                    text: "Error fetching booking details.",
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "red" },
+                    stopOnFocus: true
+                }).showToast();
+            });
     }
 
-    // Show/hide password change modal
-    function showPasswordModal() {
-        document.getElementById('passwordModal').classList.remove('hidden');
+    // Close booking details modal
+    function closeBookingDetailsModal() {
+        document.getElementById('bookingDetailsModal').classList.add('hidden');
     }
-    function closePasswordModal() {
-        document.getElementById('passwordModal').classList.add('hidden');
-        document.getElementById('passwordForm').reset();
+
+    // Update booking status
+    function updateBookingStatus(bookingId) {
+        const newStatus = prompt("Enter new status (confirmed, completed, cancelled):");
+        if (newStatus && ['confirmed', 'completed', 'cancelled'].includes(newStatus.toLowerCase())) {
+            fetch('<%= request.getContextPath() %>/driver/bookings/status', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: bookingId, status: newStatus.toLowerCase() })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        Toastify({
+                            text: "Booking status updated successfully!",
+                            duration: 1500,
+                            close: true,
+                            gravity: "top",
+                            position: "right",
+                            style: { background: "green" },
+                            stopOnFocus: true
+                        }).showToast();
+                        closeBookingDetailsModal();
+                        fetchBookings(); // Refresh the table
+                    } else {
+                        Toastify({
+                            text: "Status update failed: " + data.message,
+                            duration: 3000,
+                            close: true,
+                            gravity: "top",
+                            position: "right",
+                            style: { background: "red" },
+                            stopOnFocus: true
+                        }).showToast();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating status:', error);
+                    Toastify({
+                        text: "Something went wrong. Please try again.",
+                        duration: 3000,
+                        close: true,
+                        gravity: "top",
+                        position: "right",
+                        style: { background: "red" },
+                        stopOnFocus: true
+                    }).showToast();
+                });
+        } else {
+            Toastify({
+                text: "Invalid status entered.",
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                style: { background: "red" },
+                stopOnFocus: true
+            }).showToast();
+        }
     }
 
     // DOM Content Loaded Event Listener
     document.addEventListener("DOMContentLoaded", function () {
-        // Edit button click handler
-        document.getElementById('editButton').addEventListener('click', function () {
-            let editables = document.querySelectorAll('.editable');
-            editables.forEach(input => {
-                input.disabled = false;
-                input.classList.add('editing');
-            });
-            document.getElementById('editButton').classList.add('hidden');
-            document.getElementById('updateButton').classList.remove('hidden');
-        });
-
-        // Profile form submission handler
-        document.getElementById('profileForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            let jsonObject = {
-                id: '<%= driverId %>',
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                licenseNumber: document.getElementById('licenseNumber').value
-            };
-
-            fetch('${pageContext.request.contextPath}/driver', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(jsonObject)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        Toastify({
-                            text: "Profile updated successfully!",
-                            duration: 1500,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "green" },
-                            stopOnFocus: true
-                        }).showToast();
-                        closeProfileModal();
-                    } else {
-                        Toastify({
-                            text: "Update failed: " + data.message,
-                            duration: 3000,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "red" },
-                            stopOnFocus: true
-                        }).showToast();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating profile:', error);
-                    Toastify({
-                        text: "Something went wrong. Please try again.",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                });
-        });
-
-        // Password form submission handler
-        document.getElementById('passwordForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            let passwordData = {
-                id: '<%= driverId %>',
-                oldPassword: document.getElementById('oldPassword').value,
-                newPassword: document.getElementById('newPassword').value
-            };
-
-            fetch('${pageContext.request.contextPath}/driver/password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(passwordData)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        Toastify({
-                            text: "Password updated successfully!",
-                            duration: 1500,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "green" },
-                            stopOnFocus: true
-                        }).showToast();
-                        closePasswordModal();
-                    } else {
-                        Toastify({
-                            text: "Password update failed: " + data.message,
-                            duration: 3000,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "red" },
-                            stopOnFocus: true
-                        }).showToast();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating password:', error);
-                    Toastify({
-                        text: "Something went wrong. Please try again.",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                });
-        });
+        fetchBookings(); // Load bookings on page load
     });
 </script>
 

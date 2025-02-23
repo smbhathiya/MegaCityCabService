@@ -1,4 +1,4 @@
-package com.cabservice.megacitycabservice.servlet;
+package com.cabservice.megacitycabservice.servlet.driver;
 
 import com.cabservice.megacitycabservice.dao.DriverDAO;
 import com.cabservice.megacitycabservice.model.Driver;

@@ -1,4 +1,4 @@
-package com.cabservice.megacitycabservice.servlet;
+package com.cabservice.megacitycabservice.servlet.admin;
 
 import com.cabservice.megacitycabservice.dao.CarAssignmentDAO;
 import com.cabservice.megacitycabservice.dao.DriverDAO;

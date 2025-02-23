@@ -1,4 +1,4 @@
-package com.cabservice.megacitycabservice.servlet;
+package com.cabservice.megacitycabservice.servlet.auth;
 
 import com.cabservice.megacitycabservice.dao.UserDAO;
 import com.cabservice.megacitycabservice.model.User;
