@@ -147,7 +147,7 @@
 
         <!-- Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
-            <a href="/profile" class="card p-8 animate-slide-up">
+            <a href="${pageContext.request.contextPath}/views/driver/profile.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="user" class="w-12 h-12 text-primary mb-4"></i>
                     <h2 class="text-xl font-semibold text-white">Profile Management</h2>
@@ -276,7 +276,7 @@
                 if (data.status === "success") {
                     window.location.href = "../index.jsp";
                 } else {
-                    alert("Logout failed: " + data.message); // Replace with Toastify if available
+                    alert("Logout failed: " + data.message);
                 }
             })
             .catch(error => {

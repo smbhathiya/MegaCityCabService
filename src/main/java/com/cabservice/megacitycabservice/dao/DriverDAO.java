@@ -165,32 +165,82 @@ public class DriverDAO {
         return drivers;
     }
 
+    // Fetch driver details by user_id (not drivers.id)
+    public Driver getDriverById(UUID userId) throws SQLException {
+        String sql = "SELECT u.name, u.email, d.license_number, d.id AS driver_id " +
+                "FROM users u " +
+                "JOIN drivers d ON u.id = d.user_id " +
+                "WHERE d.user_id = ?";
 
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, userId.toString());
+            ResultSet rs = stmt.executeQuery();
 
-    // Get driver by ID
-    public Driver getDriverById(UUID driverId) throws SQLException {
-        String sql = "SELECT d.*, u.name, u.email FROM drivers d JOIN users u ON d.user_id = u.id WHERE d.id = ?";
-        try (Connection connection = getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, driverId.toString());
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Driver driver = new Driver(
-                            UUID.fromString(rs.getString("id")),
-                            UUID.fromString(rs.getString("user_id")),
-                            rs.getString("car_id") != null ? UUID.fromString(rs.getString("car_id")) : null,
-                            rs.getString("license_number"),
-                            rs.getString("availability_status"),
-                            rs.getDouble("rating"),
-                            rs.getString("created_at"),
-                            rs.getString("updated_at")
-                    );
-                    driver.setName(rs.getString("name"));
-                    driver.setEmail(rs.getString("email"));
-                    return driver;
-                }
+            if (rs.next()) {
+                return new Driver(
+                        UUID.fromString(rs.getString("driver_id")), // Use drivers.id as the driver ID
+                        rs.getString("name"),
+                        rs.getString("email"),
+                        rs.getString("license_number")
+                );
             }
         }
         return null;
+    }
+
+    // Update driver profile (name, email, license number)
+    public boolean updateDriver(UUID userId, String name, String email, String licenseNumber) throws SQLException {
+        String sql = "UPDATE users u " +
+                "JOIN drivers d ON u.id = d.user_id " +
+                "SET u.name = ?, u.email = ?, d.license_number = ?, d.updated_at = NOW() " +
+                "WHERE d.user_id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, name);
+            stmt.setString(2, email);
+            stmt.setString(3, licenseNumber);
+            stmt.setString(4, userId.toString());
+
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        }
+    }
+
+    // Fetch current password hash by user_id
+    public String getPasswordHashById(UUID userId) throws SQLException {
+        String sql = "SELECT u.password " +
+                "FROM users u " +
+                "JOIN drivers d ON u.id = d.user_id " +
+                "WHERE d.user_id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, userId.toString());
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getString("password");
+            }
+        }
+        return null;
+    }
+
+    // Update driver password by user_id
+    public boolean updateDriverPassword(UUID userId, String newPasswordHash) throws SQLException {
+        String sql = "UPDATE users u " +
+                "JOIN drivers d ON u.id = d.user_id " +
+                "SET u.password = ?, d.updated_at = NOW() " +
+                "WHERE d.user_id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, newPasswordHash);
+            stmt.setString(2, userId.toString());
+
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        }
     }
 }

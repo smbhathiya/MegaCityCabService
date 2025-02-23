@@ -28,6 +28,13 @@ public class Driver {
         this.updatedAt = updatedAt;
     }
 
+    public Driver(UUID id, String name, String email, String licenseNumber) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.licenseNumber = licenseNumber;
+    }
+
     // Getters and Setters
     public UUID getId() {
         return id;
