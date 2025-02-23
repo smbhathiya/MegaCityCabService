@@ -130,4 +130,17 @@ public class CarAssignmentDAO {
         }
     }
 
+    public UUID getDriverIdByCarId(UUID carId) throws SQLException {
+        String sql = "SELECT user_id FROM drivers WHERE car_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, carId.toString());
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return UUID.fromString(rs.getString("user_id"));
+            }
+        }
+        return null;
+    }
 }
