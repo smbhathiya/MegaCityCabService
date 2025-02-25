@@ -29,13 +29,29 @@ public class LoginServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(LoginServlet.class);
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        BufferedReader reader = request.getReader();
-        Map<String, String> requestData = gson.fromJson(reader, Map.class);
+        // Ensure Content-Type is JSON
+        if (!"application/json".equals(request.getContentType())) {
+            response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Content-Type must be application/json\"}");
+            return;
+        }
 
+        Map<String, String> requestData;
+        try {
+            BufferedReader reader = request.getReader();
+            requestData = gson.fromJson(reader, Map.class);
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid JSON format.\"}");
+            return;
+        }
+
+        // Extract email and password
         String email = requestData.get("email");
         String password = requestData.get("password");
 
-        // Input validation
         if (email == null || email.trim().isEmpty() || password == null || password.trim().isEmpty()) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.setContentType("application/json");
@@ -44,7 +60,7 @@ public class LoginServlet extends HttpServlet {
         }
 
         UserDAO userDAO = new UserDAO();
-        User user = null;
+        User user;
 
         try {
             user = userDAO.getUserByEmail(email);
@@ -62,8 +78,6 @@ public class LoginServlet extends HttpServlet {
                 oldSession.invalidate();
             }
             HttpSession session = request.getSession(true);
-
-            // Store session data
             session.setAttribute("sessionId", UUID.randomUUID().toString());
             session.setAttribute("userId", user.getId());
             session.setAttribute("userName", user.getName());
@@ -71,7 +85,6 @@ public class LoginServlet extends HttpServlet {
             session.setAttribute("role", user.getRole());
             session.setMaxInactiveInterval(30 * 60);
 
-            // Set session cookie
             Cookie sessionCookie = new Cookie("sessionId", session.getId());
             sessionCookie.setHttpOnly(true);
             sessionCookie.setSecure(true);
@@ -87,4 +100,5 @@ public class LoginServlet extends HttpServlet {
             response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid email or password.\"}");
         }
     }
+
 }
