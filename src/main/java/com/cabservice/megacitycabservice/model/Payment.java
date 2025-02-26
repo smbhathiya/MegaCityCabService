@@ -1,25 +1,27 @@
 package com.cabservice.megacitycabservice.model;
 
-import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.UUID;
 
 public class Payment {
     private UUID id;
     private UUID bookingId;
     private UUID customerId;
-    private BigDecimal amount;
+    private double amount;
     private String paymentMethod;
     private String transactionId;
     private String status;
-    private String paymentDate;
-    private String createdAt;
-    private String updatedAt;
+    private Timestamp paymentDate;
+    private String bookingNumber;
+    private String pickupLocation;
+    private String dropoffLocation;
+    private String hireDate;
 
-    // Constructors
-    public Payment() {
-    }
+    // Default constructor
+    public Payment() {}
 
-    public Payment(UUID id, UUID bookingId, UUID customerId, BigDecimal amount, String paymentMethod, String transactionId, String status, String paymentDate, String createdAt, String updatedAt) {
+    // Constructor for creating a payment
+    public Payment(UUID id, UUID bookingId, UUID customerId, double amount, String paymentMethod, String transactionId, String status, Timestamp paymentDate) {
         this.id = id;
         this.bookingId = bookingId;
         this.customerId = customerId;
@@ -28,88 +30,42 @@ public class Payment {
         this.transactionId = transactionId;
         this.status = status;
         this.paymentDate = paymentDate;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
     }
 
     // Getters and Setters
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public UUID getBookingId() { return bookingId; }
+    public void setBookingId(UUID bookingId) { this.bookingId = bookingId; }
 
-    public UUID getBookingId() {
-        return bookingId;
-    }
+    public UUID getCustomerId() { return customerId; }
+    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
 
-    public void setBookingId(UUID bookingId) {
-        this.bookingId = bookingId;
-    }
+    public double getAmount() { return amount; }
+    public void setAmount(double amount) { this.amount = amount; }
 
-    public UUID getCustomerId() {
-        return customerId;
-    }
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 
-    public void setCustomerId(UUID customerId) {
-        this.customerId = customerId;
-    }
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
 
-    public BigDecimal getAmount() {
-        return amount;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
+    public Timestamp getPaymentDate() { return paymentDate; }
+    public void setPaymentDate(Timestamp paymentDate) { this.paymentDate = paymentDate; }
 
-    public String getPaymentMethod() {
-        return paymentMethod;
-    }
+    public String getBookingNumber() { return bookingNumber; }
+    public void setBookingNumber(String bookingNumber) { this.bookingNumber = bookingNumber; }
 
-    public void setPaymentMethod(String paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
+    public String getPickupLocation() { return pickupLocation; }
+    public void setPickupLocation(String pickupLocation) { this.pickupLocation = pickupLocation; }
 
-    public String getTransactionId() {
-        return transactionId;
-    }
+    public String getDropoffLocation() { return dropoffLocation; }
+    public void setDropoffLocation(String dropoffLocation) { this.dropoffLocation = dropoffLocation; }
 
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getPaymentDate() {
-        return paymentDate;
-    }
-
-    public void setPaymentDate(String paymentDate) {
-        this.paymentDate = paymentDate;
-    }
-
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public String getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(String updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public String getHireDate() { return hireDate; }
+    public void setHireDate(String hireDate) { this.hireDate = hireDate; }
 }
