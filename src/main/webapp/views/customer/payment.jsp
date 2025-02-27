@@ -17,6 +17,7 @@
     <title>Customer Payments - Mega City Cabs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> <!-- Added jsPDF -->
     <script>
         tailwind.config = {
             theme: {
@@ -114,6 +115,7 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Transaction ID</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Payment Date</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th> <!-- Added Actions column -->
                     </tr>
                     </thead>
                     <tbody id="paymentHistoryTableBody"></tbody>
@@ -237,6 +239,7 @@
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script>
     lucide.createIcons();
+    const { jsPDF } = window.jspdf; // Access jsPDF from the library
 
     function toggleProfileDropdown() {
         document.getElementById('profileDropdown').classList.toggle('hidden');
@@ -278,7 +281,7 @@
         const pendingTbody = document.getElementById('pendingPaymentsTableBody');
         const historyTbody = document.getElementById('paymentHistoryTableBody');
         pendingTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Loading...</td></tr>';
-        historyTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Loading...</td></tr>';
+        historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">Loading...</td></tr>';
 
         // Fetch pending payments
         fetch('<%= request.getContextPath() %>/customer/payments/pending', {
@@ -324,7 +327,7 @@
                         historyTbody.appendChild(row);
                     });
                     if (data.data.length === 0) {
-                        historyTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">No payment history</td></tr>';
+                        historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">No payment history</td></tr>';
                     }
                 } else {
                     throw new Error(data.data);
@@ -332,7 +335,7 @@
             })
             .catch(error => {
                 console.error('Error fetching payment history:', error);
-                historyTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Error loading data</td></tr>';
+                historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">Error loading data</td></tr>';
                 Toastify({ text: "Error fetching payment history: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
             });
     }
@@ -345,7 +348,7 @@
         row.appendChild(createCell(payment.pickupLocation));
         row.appendChild(createCell(payment.dropoffLocation));
         row.appendChild(createCell(payment.hireDate));
-        row.appendChild(createCell('Rs.'+ payment.amount.toFixed(2)));
+        row.appendChild(createCell('Rs.' + payment.amount.toFixed(2)));
 
         const actionCell = document.createElement('td');
         actionCell.className = "px-6 py-4";
@@ -364,11 +367,20 @@
         row.className = 'border-b border-white/10';
 
         row.appendChild(createCell(payment.bookingNumber));
-        row.appendChild(createCell('Rs.'+ payment.amount.toFixed(2)));
+        row.appendChild(createCell('Rs.' + payment.amount.toFixed(2)));
         row.appendChild(createCell(payment.paymentMethod));
         row.appendChild(createCell(payment.transactionId));
         row.appendChild(createCell(payment.status));
         row.appendChild(createCell(new Date(payment.paymentDate).toLocaleString()));
+
+        const actionCell = document.createElement('td');
+        actionCell.className = "px-6 py-4";
+        const printBtn = document.createElement('button');
+        printBtn.className = "text-primary hover:text-primary-700 flex items-center gap-2";
+        printBtn.innerHTML = '<i data-lucide="printer" class="w-5 h-5"></i> Print Bill';
+        printBtn.onclick = () => printBill(payment);
+        actionCell.appendChild(printBtn);
+        row.appendChild(actionCell);
 
         return row;
     }
@@ -380,9 +392,34 @@
         return td;
     }
 
+    function printBill(payment) {
+        const doc = new jsPDF();
+
+        // Add title
+        doc.setFontSize(20);
+        doc.text("Mega City Cabs - Payment Receipt", 20, 20);
+
+        // Add payment details
+        doc.setFontSize(12);
+        doc.text("Booking Number: " +payment.bookingNumber, 20, 40);
+        doc.text("Amount: Rs. "+payment.amount.toFixed(2), 20, 50);
+        doc.text("Payment Method: "+payment.paymentMethod, 20, 60);
+        doc.text("Transaction ID: "+payment.transactionId, 20, 70);
+        doc.text("Status: "+payment.status, 20, 80);
+        doc.text("Payment Date: " + new Date(payment.paymentDate).toLocaleString(), 20, 90);
+
+
+        // Add footer
+        doc.setFontSize(10);
+        doc.text("Thank you for choosing Mega City Cabs!", 20, 110);
+
+        // Save the PDF
+        doc.save("Receipt_"+payment.bookingNumber+".pdf");
+    }
+
     function viewPaymentDetails(payment) {
         document.getElementById('detailBookingNumber').textContent = payment.bookingNumber;
-        document.getElementById('detailAmount').textContent = 'Rs.'+ payment.amount.toFixed(2);
+        document.getElementById('detailAmount').textContent = 'Rs.' + payment.amount.toFixed(2);
         document.getElementById('detailPaymentMethod').textContent = payment.paymentMethod;
         document.getElementById('detailTransactionId').textContent = payment.transactionId;
         document.getElementById('detailStatus').textContent = payment.status;
@@ -401,7 +438,7 @@
     function showSelectPaymentMethodModal(payment) {
         currentPayment = payment;
         document.getElementById('selectBookingNumber').textContent = payment.bookingNumber;
-        document.getElementById('selectAmount').textContent = 'Rs.'+ payment.amount.toFixed(2);
+        document.getElementById('selectAmount').textContent = 'Rs.' + payment.amount.toFixed(2);
         document.getElementById('selectPaymentMethodModal').classList.remove('hidden');
     }
 
