@@ -106,9 +106,9 @@ public class CustomerDAO {
     }
 
     // Update customer details
-    public boolean updateCustomer(UUID customerId, String name, String contactNo, String address) throws SQLException {
+    public boolean updateCustomer(UUID customerId, String name, String contactNo, String address, String email) throws SQLException {
         String sql = "UPDATE users u JOIN customers c ON u.id = c.user_id " +
-                "SET u.name = ?, c.contact_no = ?, c.address = ?, c.updated_at = NOW() " +
+                "SET u.name = ?, c.contact_no = ?, c.address = ?, u.email = ?, c.updated_at = NOW() " +
                 "WHERE c.id = ?";
 
         try (Connection conn = DBUtil.getConnection();
@@ -117,7 +117,8 @@ public class CustomerDAO {
             stmt.setString(1, name);
             stmt.setString(2, contactNo);
             stmt.setString(3, address);
-            stmt.setObject(4, customerId.toString());
+            stmt.setString(4, email); // Added email parameter
+            stmt.setObject(5, customerId.toString());
 
             int rowsAffected = stmt.executeUpdate();
 

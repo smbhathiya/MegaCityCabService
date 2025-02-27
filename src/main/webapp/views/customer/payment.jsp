@@ -278,7 +278,7 @@
         const pendingTbody = document.getElementById('pendingPaymentsTableBody');
         const historyTbody = document.getElementById('paymentHistoryTableBody');
         pendingTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Loading...</td></tr>';
-        historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">Loading...</td></tr>';
+        historyTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Loading...</td></tr>';
 
         // Fetch pending payments
         fetch('<%= request.getContextPath() %>/customer/payments/pending', {
@@ -324,7 +324,7 @@
                         historyTbody.appendChild(row);
                     });
                     if (data.data.length === 0) {
-                        historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">No payment history</td></tr>';
+                        historyTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">No payment history</td></tr>';
                     }
                 } else {
                     throw new Error(data.data);
@@ -332,7 +332,7 @@
             })
             .catch(error => {
                 console.error('Error fetching payment history:', error);
-                historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">Error loading data</td></tr>';
+                historyTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Error loading data</td></tr>';
                 Toastify({ text: "Error fetching payment history: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
             });
     }
@@ -369,15 +369,6 @@
         row.appendChild(createCell(payment.transactionId));
         row.appendChild(createCell(payment.status));
         row.appendChild(createCell(new Date(payment.paymentDate).toLocaleString()));
-
-        const actionCell = document.createElement('td');
-        actionCell.className = "px-6 py-4";
-        const viewBtn = document.createElement('button');
-        viewBtn.className = "text-primary hover:text-primary-700";
-        viewBtn.innerHTML = '<i data-lucide="eye" class="w-5 h-5"></i>';
-        viewBtn.onclick = () => viewPaymentDetails(payment);
-        actionCell.appendChild(viewBtn);
-        row.appendChild(actionCell);
 
         return row;
     }

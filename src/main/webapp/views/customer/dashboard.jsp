@@ -115,32 +115,25 @@
             if (customerId != null) {
         %>
         <!-- Dashboard Overview -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12 animate-slide-up">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12 animate-slide-up" id="dashboard-overview">
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Total Spend</p>
-                <p class="text-3xl font-bold text-white">Rs. 8,500</p>
+                <p class="text-3xl font-bold text-white" id="total-spend">Loading...</p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Active Bookings</p>
-                <p class="text-3xl font-bold text-white">2</p>
+                <p class="text-3xl font-bold text-white" id="active-bookings">Loading...</p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Booking Status</p>
-                <p class="text-3xl font-bold text-primary">In Progress</p>
+                <p class="text-3xl font-bold text-primary" id="booking-status">Loading...</p>
             </div>
             <div class="overview-card rounded-xl p-6">
-                <p class="text-sm text-light/70 mb-2">Rating</p>
-                <p class="text-3xl font-bold text-white">4.9/5.0</p>
+                <p class="text-sm text-light/70 mb-2">Points</p>
+                <p class="text-3xl font-bold text-white" id="points">Loading...</p>
             </div>
         </div>
 
-        <!-- Search Bar -->
-<%--        <div class="mb-12 animate-fade-in">--%>
-<%--            <div class="relative max-w-2xl mx-auto">--%>
-<%--                <input type="text" placeholder="Search bookings..." class="w-full bg-accent rounded-full py-3 px-6 border border-white/10 text-light placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50">--%>
-<%--                <i data-lucide="search" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>--%>
-<%--            </div>--%>
-<%--        </div>--%>
 
         <!-- Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
@@ -241,6 +234,43 @@
 
 <script>
     lucide.createIcons();
+
+    document.addEventListener("DOMContentLoaded", function () {
+        fetchDashboardData();
+    });
+
+    function fetchDashboardData() {
+        fetch('<%= request.getContextPath() %>/customer/dashboard-data', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch dashboard data');
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('total-spend').textContent = 'Rs.'+data.totalSpend.toFixed(2);
+                document.getElementById('active-bookings').textContent = data.activeBookings;
+                document.getElementById('booking-status').textContent = data.bookingStatus;
+                document.getElementById('points').textContent = data.points.toFixed(1);
+            })
+            .catch(error => {
+                console.error('Error fetching dashboard data:', error);
+                document.getElementById('total-spend').textContent = 'Error';
+                document.getElementById('active-bookings').textContent = 'Error';
+                document.getElementById('booking-status').textContent = 'Error';
+                document.getElementById('points').textContent = 'Error';
+                Toastify({
+                    text: "Error loading dashboard data: " + error.message,
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: "red" }
+                }).showToast();
+            });
+    }
 
     function toggleProfileDropdown() {
         document.getElementById('profileDropdown').classList.toggle('hidden');

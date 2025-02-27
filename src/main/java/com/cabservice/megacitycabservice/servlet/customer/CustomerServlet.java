@@ -126,9 +126,10 @@ public class CustomerServlet extends HttpServlet {
         String name = jsonObject.get("name").getAsString();
         String contactNo = jsonObject.get("contact_no").getAsString();
         String address = jsonObject.get("address").getAsString();
+        String email = jsonObject.get("email").getAsString(); // Added email extraction
 
-        if (customerId == null || name == null || contactNo == null || address == null) {
-            response.getWriter().write("{\"status\": \"error\", \"message\": \"Customer ID, name, contact number, and address are required.\"}");
+        if (customerId == null || name == null || contactNo == null || address == null || email == null) {
+            response.getWriter().write("{\"status\": \"error\", \"message\": \"Customer ID, name, contact number, address, and email are required.\"}");
             return;
         }
 
@@ -136,7 +137,7 @@ public class CustomerServlet extends HttpServlet {
             UUID id = UUID.fromString(customerId);
 
             CustomerDAO customerDAO = new CustomerDAO();
-            boolean isUpdated = customerDAO.updateCustomer(id, name, contactNo, address);
+            boolean isUpdated = customerDAO.updateCustomer(id, name, contactNo, address, email);
 
             if (isUpdated) {
                 response.getWriter().write("{\"status\": \"success\", \"message\": \"Customer details updated successfully!\"}");
@@ -153,9 +154,6 @@ public class CustomerServlet extends HttpServlet {
             response.getWriter().write("{\"status\": \"error\", \"message\": \"Unexpected error: " + e.getMessage() + "\"}");
         }
     }
-
-
-
 }
 
 

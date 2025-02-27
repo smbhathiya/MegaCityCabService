@@ -39,9 +39,6 @@
         .editable.editing {
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        input[type="email"][disabled] {
-            border: none;
-        }
         .form-container {
             background: linear-gradient(135deg, rgba(42, 42, 42, 0.9), rgba(26, 26, 26, 0.8));
             backdrop-filter: blur(10px);
@@ -101,7 +98,7 @@
                 </div>
                 <div class="mb-4">
                     <label for="email" class="block text-sm font-medium text-light">Email</label>
-                    <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light" disabled readonly>
+                    <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled> <!-- Made editable -->
                 </div>
                 <div class="mb-4">
                     <label for="contactNo" class="block text-sm font-medium text-light">Contact Number</label>
@@ -266,7 +263,8 @@
                 id: '<%= customerId %>',
                 name: document.getElementById('name').value,
                 contact_no: document.getElementById('contactNo').value,
-                address: document.getElementById('address').value
+                address: document.getElementById('address').value,
+                email: document.getElementById('email').value // Added email to the request
             };
 
             fetch('${pageContext.request.contextPath}/customer', {

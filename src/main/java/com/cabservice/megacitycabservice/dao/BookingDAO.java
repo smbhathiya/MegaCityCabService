@@ -70,7 +70,6 @@ public class BookingDAO {
         }
     }
 
-
     // Get booking by booking ID
     public Booking getBookingById(String bookingId) throws SQLException {
         String sql = "SELECT id, booking_number, customer_id, driver_id, car_id, pickup_location, dropoff_location, " +
@@ -203,17 +202,17 @@ public class BookingDAO {
                 Booking booking = new Booking(
                         UUID.fromString(rs.getString("id")),
                         rs.getString("booking_number"),
-                        null, // customerId (not needed here)
+                        null,
                         driverId,
-                        null, // carId (not needed here)
+                        null,
                         rs.getString("pickup_location"),
                         rs.getString("dropoff_location"),
-                        0.0, // distance (not fetched here)
+                        0.0,
                         rs.getString("booking_status"),
-                        0.0, // totalFare (not fetched here)
-                        null, // paymentStatus (not fetched here)
+                        0.0,
+                        null,
                         rs.getString("hire_date"),
-                        null  // hireTime (not fetched here)
+                        null
                 );
                 bookings.add(booking);
             }
