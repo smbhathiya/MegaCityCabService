@@ -9,6 +9,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script>
         tailwind.config = {
             theme: {
@@ -74,6 +76,10 @@
         #calendar {
             color: #F5F5F5;
         }
+        .fc-daygrid-event {
+            white-space: normal !important;
+            padding: 2px 4px;
+        }
     </style>
 </head>
 <body class="bg-dark text-light">
@@ -121,30 +127,21 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12 animate-slide-up">
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Total Earnings</p>
-                <p class="text-3xl font-bold text-white">Rs. 12,500</p>
+                <p id="totalEarnings" class="text-3xl font-bold text-white">Loading...</p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Active Bookings</p>
-                <p class="text-3xl font-bold text-white">3</p>
+                <p id="activeBookings" class="text-3xl font-bold text-white">Loading...</p>
             </div>
-            <div class="overview-card rounded-xl p-6">
-                <p class="text-sm text-light/70 mb-2">Vehicle Status</p>
-                <p class="text-3xl font-bold text-green-500">Good</p>
-            </div>
-            <div class="overview-card rounded-xl p-6">
-                <p class="text-sm text-light/70 mb-2">Rating</p>
-                <p class="text-3xl font-bold text-white">4.8/5.0</p>
-            </div>
-        </div>
-
-        <!-- Search Bar -->
-<%--        <div class="mb-12 animate-fade-in">--%>
-<%--            <div class="relative max-w-2xl mx-auto">--%>
-<%--                <input type="text" placeholder="Search bookings..." class="w-full bg-accent rounded-full py-3 px-6 border border-white/10 text-light placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50">--%>
-<%--                <i data-lucide="search" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>--%>
+<%--            <div class="overview-card rounded-xl p-6">--%>
+<%--                <p class="text-sm text-light/70 mb-2">Vehicle Status</p>--%>
+<%--                <p class="text-3xl font-bold text-green-500">Good</p>--%>
 <%--            </div>--%>
-<%--        </div>--%>
-<%--        --%>
+<%--            <div class="overview-card rounded-xl p-6">--%>
+<%--                <p class="text-sm text-light/70 mb-2">Rating</p>--%>
+<%--                <p class="text-3xl font-bold text-white">4.8/5.0</p>--%>
+<%--            </div>--%>
+        </div>
 
         <!-- Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
@@ -172,7 +169,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             <!-- Performance Graph -->
             <div class="card p-6 animate-slide-up">
-                <h2 class="text-2xl font-bold text-white mb-6">Performance</h2>
+                <h2 class="text-2xl font-bold text-white mb-6">Last 30 Days Earnings</h2>
                 <canvas id="performanceChart"></canvas>
             </div>
             <!-- Calendar -->
@@ -264,19 +261,20 @@
     function confirmLogout() {
         fetch('<%= request.getContextPath() %>/logout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
         })
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
                     window.location.href = "../index.jsp";
                 } else {
-                    alert("Logout failed: " + data.message);
+                    Toastify({ text: "Logout failed: " + data.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert("An unexpected error occurred during logout.");
+                Toastify({ text: "An unexpected error occurred during logout.", duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
             });
     }
 
@@ -293,57 +291,218 @@
         }
     }
 
-    // Performance Chart and Calendar Initialization
-    document.addEventListener('DOMContentLoaded', function () {
-        const ctx = document.getElementById('performanceChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-                datasets: [{
-                    label: 'Earnings',
-                    data: [5000, 8000, 12000, 9000, 15000],
-                    borderColor: '#FCC603',
-                    backgroundColor: 'rgba(252, 198, 3, 0.2)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: '#F5F5F5' }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#F5F5F5' }
-                    }
-                },
-                plugins: {
-                    legend: { labels: { color: '#F5F5F5' } }
+    // Fetch and update Total Earnings
+    function fetchTotalEarnings() {
+        fetch('<%= request.getContextPath() %>/driver/payments/history', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Total earnings response:', data);
+                if (data.status === 'success' && Array.isArray(data.data)) {
+                    const payments = data.data;
+                    const totalEarnings = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+                    document.getElementById('totalEarnings').textContent = "Rs. "+totalEarnings.toFixed(2);
+                } else {
+                    console.error('Total earnings API error:', data.data || 'No error message');
+                    document.getElementById('totalEarnings').textContent = 'Error';
+                    Toastify({ text: "Failed to load total earnings: " + (data.data || 'Unknown error'), duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
                 }
-            }
-        });
+            })
+            .catch(error => {
+                console.error('Error fetching total earnings:', error);
+                document.getElementById('totalEarnings').textContent = 'Error';
+                Toastify({ text: "Error fetching total earnings: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+            });
+    }
 
-        const calendarEl = document.getElementById('calendar');
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            height: 'auto',
-            events: [
-                { title: 'Ride with John', date: '2023-10-15' },
-                { title: 'Vehicle Maintenance', date: '2023-10-20' }
-            ],
-            headerToolbar: {
-                left: 'prev,next',
-                center: 'title',
-                right: 'today'
-            },
-            themeSystem: 'standard',
-            dayMaxEvents: true
-        });
-        calendar.render();
+    // Fetch and update Active Bookings
+    function fetchActiveBookings() {
+        fetch('<%= request.getContextPath() %>/driver/bookings?id=<%= driverId %>', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Active bookings response:', data);
+                if (data.status === 'success' && Array.isArray(data.bookings)) {
+                    const bookings = data.bookings;
+                    const activeCount = bookings.filter(booking => booking.bookingStatus === 'confirmed').length;
+                    document.getElementById('activeBookings').textContent = activeCount;
+                } else {
+                    console.error('Active bookings API error:', data.message || 'No error message');
+                    document.getElementById('activeBookings').textContent = 'Error';
+                    Toastify({ text: "Failed to load active bookings: " + (data.message || 'Unknown error'), duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching active bookings:', error);
+                document.getElementById('activeBookings').textContent = 'Error';
+                Toastify({ text: "Error fetching active bookings: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+            });
+    }
+
+    // Fetch and populate Performance Chart (Last 30 Days)
+    function fetchEarningsData() {
+        fetch('<%= request.getContextPath() %>/driver/payments/history', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Payment history response:', data);
+                if (data.status === 'success' && Array.isArray(data.data)) {
+                    const payments = data.data;
+                    const now = new Date();
+                    const thirtyDaysAgo = new Date(now);
+                    thirtyDaysAgo.setDate(now.getDate() - 30);
+
+                    // Filter payments for the last 30 days and aggregate by date
+                    const dailyEarnings = {};
+                    payments.forEach(payment => {
+                        const paymentDate = new Date(payment.paymentDate);
+                        if (paymentDate >= thirtyDaysAgo && paymentDate <= now) {
+                            const dateKey = paymentDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                            dailyEarnings[dateKey] = (dailyEarnings[dateKey] || 0) + (payment.amount || 0);
+                        }
+                    });
+
+                    // Generate labels and data for the last 30 days
+                    const labels = [];
+                    const earnings = [];
+                    for (let i = 0; i <= 30; i++) {
+                        const date = new Date(now);
+                        date.setDate(now.getDate() - i);
+                        const dateKey = date.toISOString().split('T')[0];
+                        labels.push(date.toLocaleDateString('default', { day: 'numeric', month: 'short' }));
+                        earnings.push(dailyEarnings[dateKey] || 0);
+                    }
+
+                    labels.reverse();
+                    earnings.reverse();
+
+                    console.log('Chart labels:', labels);
+                    console.log('Chart earnings:', earnings);
+
+                    const ctx = document.getElementById('performanceChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Earnings (Last 30 Days)',
+                                data: earnings,
+                                borderColor: '#FCC603',
+                                backgroundColor: 'rgba(252, 198, 3, 0.2)',
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                    ticks: { color: '#F5F5F5' }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: '#F5F5F5', maxRotation: 45, minRotation: 45 }
+                                }
+                            },
+                            plugins: {
+                                legend: { labels: { color: '#F5F5F5' } }
+                            }
+                        }
+                    });
+                } else {
+                    console.error('Payment history API error:', data.data || 'No error message provided');
+                    Toastify({ text: "Failed to load earnings data: " + (data.data || 'Unknown error'), duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching payment history:', error);
+                Toastify({ text: "Error fetching earnings data: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+            });
+    }
+
+    // Fetch and populate Calendar
+    function fetchBookingData() {
+        fetch('<%= request.getContextPath() %>/driver/bookings?id=<%= driverId %>', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Bookings response:', data);
+                if (data.status === 'success' && Array.isArray(data.bookings)) {
+                    const bookings = data.bookings;
+                    const events = bookings.map(booking => ({
+                        title: booking.bookingNumber,
+                        start: booking.hireDate,
+                        allDay: true,
+                        backgroundColor: '#FCC603',
+                        borderColor: '#CC9F02',
+                        textColor: '#1A1A1A'
+                    }));
+
+                    console.log('Calendar events:', events);
+
+                    const calendarEl = document.getElementById('calendar');
+                    const calendar = new FullCalendar.Calendar(calendarEl, {
+                        initialView: 'dayGridMonth',
+                        height: 'auto',
+                        events: events,
+                        headerToolbar: {
+                            left: 'prev,next',
+                            center: 'title',
+                            right: 'today'
+                        },
+                        themeSystem: 'standard',
+                        dayMaxEvents: true,
+                        eventClick: function(info) {
+                            alert('Booking ID: ' + info.event.title);
+                        },
+                        eventContent: function(arg) {
+                            return { html: '<div>' + arg.event.title + '</div>' };
+                        }
+                    });
+                    calendar.render();
+                } else {
+                    console.error('Bookings API error:', data.message || 'No error message provided');
+                    Toastify({ text: "Failed to load bookings: " + (data.message || 'Unknown error'), duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching bookings:', error);
+                Toastify({ text: "Error fetching bookings: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+            });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchTotalEarnings();
+        fetchActiveBookings();
+        fetchEarningsData();
+        fetchBookingData();
     });
 </script>
 
