@@ -130,17 +130,17 @@
                 <p id="totalEarnings" class="text-3xl font-bold text-white">Loading...</p>
             </div>
             <div class="overview-card rounded-xl p-6">
-                <p class="text-sm text-light/70 mb-2">Active Bookings</p>
-                <p id="activeBookings" class="text-3xl font-bold text-white">Loading...</p>
-            </div>
-<%--            <div class="overview-card rounded-xl p-6">--%>
-<%--                <p class="text-sm text-light/70 mb-2">Vehicle Status</p>--%>
-<%--                <p class="text-3xl font-bold text-green-500">Good</p>--%>
-<%--            </div>--%>
-<%--            <div class="overview-card rounded-xl p-6">--%>
-<%--                <p class="text-sm text-light/70 mb-2">Rating</p>--%>
-<%--                <p class="text-3xl font-bold text-white">4.8/5.0</p>--%>
-<%--            </div>--%>
+                <p class="text-sm text-light/70 mb-2">Active Bookings</p><div class="overview-card rounded-xl p-6">--%>
+                <%--                <p class="text-sm text-light/70 mb-2">Vehicle Status</p>--%>
+                <%--                <p class="text-3xl font-bold text-green-500">Good</p>--%>
+                <%--            </div>--%>
+                <%--            <div class="overview-card rounded-xl p-6">--%>
+                <%--                <p class="text-sm text-light/70 mb-2">Rating</p>--%>
+                <%--                <p class="text-3xl font-bold text-white">4.8/5.0</p>--%>
+                <%--            </div>
+                                <p id="activeBookings" class="text-3xl font-bold text-white">Loading...</p>
+                            </div>
+                <%--            --%>
         </div>
 
         <!-- Cards Grid -->
