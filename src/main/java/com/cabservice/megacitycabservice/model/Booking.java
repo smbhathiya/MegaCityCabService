@@ -42,6 +42,12 @@ public class Booking {
         this.hireTime = hireTime;
     }
 
+    public Booking(String bookingNumber, String hireDate, String bookingStatus) {
+        this.bookingNumber = bookingNumber;
+        this.hireDate = hireDate;
+        this.bookingStatus = bookingStatus;
+    }
+
 
     public Booking() {
 

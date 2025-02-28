@@ -359,8 +359,8 @@
                                 console.log('Payment history response:', JSON.stringify(data, null, 2));
                                 if (data.status === 'success' && Array.isArray(data.data)) {
                                     const payments = data.data;
-                                    const totalRevenue = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) / 0.7; // Reverse 70% driver share
-                                    const systemProfit = totalRevenue * 0.3; // 30% system profit
+                                    const totalRevenue = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) / 0.7;
+                                    const systemProfit = totalRevenue * 0.3;
                                     console.log('Total Revenue:', totalRevenue, 'System Profit:', systemProfit);
                                     document.getElementById('totalRevenue').textContent = "Rs. "+totalRevenue.toFixed(2);
                                     document.getElementById('systemProfit').textContent = "Profit: Rs. "+systemProfit.toFixed(2);

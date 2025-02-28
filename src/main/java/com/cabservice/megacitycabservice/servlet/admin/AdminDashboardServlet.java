@@ -1,6 +1,8 @@
 package com.cabservice.megacitycabservice.servlet.admin;
 
 import com.cabservice.megacitycabservice.dao.AdminDashboardDAO;
+import com.cabservice.megacitycabservice.model.Booking;
+import com.cabservice.megacitycabservice.model.Payment;
 import com.google.gson.Gson;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -50,13 +52,13 @@ public class AdminDashboardServlet extends HttpServlet {
             try {
                 if ("/payments/history".equals(pathInfo)) {
                     logger.info("Fetching payment history");
-                    List<AdminDashboardDAO.Payment> paymentHistory = dashboardDAO.getPaymentHistory();
+                    List<Payment> paymentHistory = dashboardDAO.getPaymentHistory();
                     logger.info("Payment history retrieved: " + paymentHistory.size() + " records");
                     response.getWriter().write(gson.toJson(new ResponseWrapper("success", paymentHistory)));
                     success = true;
                 } else if ("/bookings".equals(pathInfo)) {
                     logger.info("Fetching all bookings");
-                    List<AdminDashboardDAO.Booking> bookings = dashboardDAO.getAllBookings();
+                    List<Booking> bookings = dashboardDAO.getAllBookings();
                     logger.info("Bookings retrieved: " + bookings.size() + " records");
                     response.getWriter().write(gson.toJson(new ResponseWrapper("success", bookings)));
                     success = true;
@@ -85,7 +87,7 @@ public class AdminDashboardServlet extends HttpServlet {
                     response.getWriter().write(gson.toJson(new ResponseWrapper("error", errorMessage)));
                 } else {
                     try {
-                        Thread.sleep(100 * retries); // Incremental delay: 100ms, 200ms, 300ms
+                        Thread.sleep(100 * retries);
                     } catch (InterruptedException ie) {
                         logger.log(Level.WARNING, "Retry delay interrupted", ie);
                     }

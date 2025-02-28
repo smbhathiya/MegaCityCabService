@@ -8,32 +8,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import com.cabservice.megacitycabservice.model.Booking;
+import com.cabservice.megacitycabservice.model.Payment;
 
 public class AdminDashboardDAO {
 
-    // Inner class for Payment data
-    public static class Payment {
-        public double amount; // Full payment amount before driver share
-        public String paymentDate;
 
-        public Payment(double amount, String paymentDate) {
-            this.amount = amount;
-            this.paymentDate = paymentDate;
-        }
-    }
-
-    // Inner class for Booking data
-    public static class Booking {
-        public String bookingNumber;
-        public String hireDate;
-        public String bookingStatus;
-
-        public Booking(String bookingNumber, String hireDate, String bookingStatus) {
-            this.bookingNumber = bookingNumber;
-            this.hireDate = hireDate;
-            this.bookingStatus = bookingStatus;
-        }
-    }
 
     // Get all payment history
     public List<Payment> getPaymentHistory() throws SQLException {
@@ -46,7 +26,7 @@ public class AdminDashboardDAO {
             while (rs.next()) {
                 Payment payment = new Payment(
                         rs.getDouble("amount"),
-                        rs.getString("payment_date")
+                        rs.getTimestamp("payment_date")
                 );
                 paymentHistory.add(payment);
             }

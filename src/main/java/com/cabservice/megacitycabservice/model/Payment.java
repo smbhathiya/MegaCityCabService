@@ -32,6 +32,11 @@ public class Payment {
         this.paymentDate = paymentDate;
     }
 
+    public Payment(double amount, Timestamp paymentDate) {
+        this.amount = amount;
+        this.paymentDate = paymentDate;
+    }
+
     // Getters and Setters
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
