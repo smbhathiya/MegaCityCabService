@@ -61,7 +61,6 @@ public class AdminDAO {
         }
     }
 
-    // Get total number of cars
     public int getTotalCars() throws SQLException {
         String sql = "SELECT COUNT(*) FROM cars";
         try (Connection conn = getConnection();
@@ -74,7 +73,6 @@ public class AdminDAO {
         }
     }
 
-    // Get total number of drivers
     public int getTotalDrivers() throws SQLException {
         String sql = "SELECT COUNT(*) FROM drivers WHERE availability_status != 'inactive'";
         try (Connection conn = getConnection();
@@ -87,7 +85,6 @@ public class AdminDAO {
         }
     }
 
-    // Get total number of active bookings
     public int getActiveBookings() throws SQLException {
         String sql = "SELECT COUNT(*) FROM bookings WHERE booking_status IN ('confirmed', 'in-progress')";
         try (Connection conn = getConnection();
@@ -100,7 +97,6 @@ public class AdminDAO {
         }
     }
 
-    // Get total number of pending requests
     public int getPendingRequests() throws SQLException {
         String sql = "SELECT COUNT(*) FROM bookings WHERE booking_status = 'pending'";
         try (Connection conn = getConnection();

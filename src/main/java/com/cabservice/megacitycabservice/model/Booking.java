@@ -1,5 +1,6 @@
 package com.cabservice.megacitycabservice.model;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
 
@@ -23,6 +24,7 @@ public class Booking {
     private Date updatedAt;
     private String hireTime;
     private Car carDetails;
+    private Timestamp paymentDate;
 
     public Booking(UUID id, String bookingNumber, UUID customerId, UUID driverId, UUID carId, String pickupLocation, String dropoffLocation, double distance, String bookingStatus, double totalFare, String paymentStatus, String hireDate, String hireTime) {
         this.id = id;
@@ -39,6 +41,13 @@ public class Booking {
         this.hireDate = hireDate;
         this.hireTime = hireTime;
     }
+
+    public Booking(String bookingNumber, String hireDate, String bookingStatus) {
+        this.bookingNumber = bookingNumber;
+        this.hireDate = hireDate;
+        this.bookingStatus = bookingStatus;
+    }
+
 
     public Booking() {
 
@@ -185,4 +194,6 @@ public class Booking {
 
     public Car getCarDetails() { return carDetails; }
     public void setCarDetails(Car carDetails) { this.carDetails = carDetails; }
+    public void setPaymentDate(Timestamp paymentDate) { this.paymentDate = paymentDate; }
+
 }

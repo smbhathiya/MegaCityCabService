@@ -112,7 +112,6 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Drop-off</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Date</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                     </tr>
                     </thead>
                     <tbody id="completedCancelledBookingsTableBody"></tbody>
@@ -204,7 +203,7 @@
         const confirmedTbody = document.getElementById('confirmedBookingsTableBody');
         const completedCancelledTbody = document.getElementById('completedCancelledBookingsTableBody');
         confirmedTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Loading...</td></tr>';
-        completedCancelledTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Loading...</td></tr>';
+        completedCancelledTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Loading...</td></tr>';
 
         fetch('<%= request.getContextPath() %>/customer/booking-history', {
             method: 'GET',
@@ -239,13 +238,13 @@
                     completedCancelledTbody.appendChild(row);
                 });
                 if (otherBookings.length === 0) {
-                    completedCancelledTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">No completed or cancelled bookings</td></tr>';
+                    completedCancelledTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">No completed or cancelled bookings</td></tr>';
                 }
             })
             .catch(error => {
                 console.error('Error fetching booking history:', error);
                 confirmedTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Error loading data</td></tr>';
-                completedCancelledTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Error loading data</td></tr>';
+                completedCancelledTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Error loading data</td></tr>';
                 Toastify({ text: "Error fetching booking history: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
             });
     }
@@ -258,18 +257,19 @@
         row.appendChild(createCell(booking.pickupLocation));
         row.appendChild(createCell(booking.dropoffLocation));
         row.appendChild(createCell(booking.hireDate));
+
         if (includeStatus) {
             row.appendChild(createCell(booking.bookingStatus));
+        } else {
+            const actionCell = document.createElement('td');
+            actionCell.className = "px-6 py-4";
+            const viewBtn = document.createElement('button');
+            viewBtn.className = "text-primary hover:text-primary-700";
+            viewBtn.innerHTML = '<i data-lucide="eye" class="w-5 h-5"></i>';
+            viewBtn.onclick = () => viewBookingDetails(booking);
+            actionCell.appendChild(viewBtn);
+            row.appendChild(actionCell);
         }
-
-        const actionCell = document.createElement('td');
-        actionCell.className = "px-6 py-4";
-        const viewBtn = document.createElement('button');
-        viewBtn.className = "text-primary hover:text-primary-700";
-        viewBtn.innerHTML = '<i data-lucide="eye" class="w-5 h-5"></i>';
-        viewBtn.onclick = () => viewBookingDetails(booking);
-        actionCell.appendChild(viewBtn);
-        row.appendChild(actionCell);
 
         return row;
     }

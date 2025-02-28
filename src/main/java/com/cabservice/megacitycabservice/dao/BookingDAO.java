@@ -70,7 +70,6 @@ public class BookingDAO {
         }
     }
 
-
     // Get booking by booking ID
     public Booking getBookingById(String bookingId) throws SQLException {
         String sql = "SELECT id, booking_number, customer_id, driver_id, car_id, pickup_location, dropoff_location, " +
@@ -165,20 +164,25 @@ public class BookingDAO {
     // Map result set to Booking object
     private Booking mapToBooking(ResultSet rs) throws SQLException {
         Booking booking = new Booking();
-        booking.setId(UUID.fromString(rs.getString("id")));
+        String id = rs.getString("id");
+        if (id != null) booking.setId(UUID.fromString(id));
         booking.setBookingNumber(rs.getString("booking_number"));
-        booking.setCustomerId(UUID.fromString(rs.getString("customer_id")));
+        String customerId = rs.getString("customer_id");
+        if (customerId != null) booking.setCustomerId(UUID.fromString(customerId));
+        String driverId = rs.getString("driver_id");
+        if (driverId != null) booking.setDriverId(UUID.fromString(driverId));
+        String carId = rs.getString("car_id");
+        if (carId != null) booking.setCarId(UUID.fromString(carId));
         booking.setPickupLocation(rs.getString("pickup_location"));
         booking.setDropOffLocation(rs.getString("dropoff_location"));
-        booking.setHireDate(rs.getDate("hire_date").toString());
+        booking.setDistance(rs.getDouble("distance"));
         booking.setBookingStatus(rs.getString("booking_status"));
+        booking.setTotalFare(rs.getDouble("total_fare"));
         booking.setPaymentStatus(rs.getString("payment_status"));
+        booking.setHireDate(rs.getString("hire_date"));
+        booking.setHireTime(rs.getString("hire_time"));
         booking.setCreatedAt(rs.getTimestamp("created_at"));
         booking.setUpdatedAt(rs.getTimestamp("updated_at"));
-        booking.setDriverId(UUID.fromString(rs.getString("driver_id")));
-        booking.setCarId(UUID.fromString(rs.getString("car_id")));
-        booking.setHireTime(rs.getString("hire_time"));
-        booking.setTotalFare(rs.getDouble("total_fare"));
         return booking;
     }
 
@@ -198,17 +202,17 @@ public class BookingDAO {
                 Booking booking = new Booking(
                         UUID.fromString(rs.getString("id")),
                         rs.getString("booking_number"),
-                        null, // customerId (not needed here)
+                        null,
                         driverId,
-                        null, // carId (not needed here)
+                        null,
                         rs.getString("pickup_location"),
                         rs.getString("dropoff_location"),
-                        0.0, // distance (not fetched here)
+                        0.0,
                         rs.getString("booking_status"),
-                        0.0, // totalFare (not fetched here)
-                        null, // paymentStatus (not fetched here)
+                        0.0,
+                        null,
                         rs.getString("hire_date"),
-                        null  // hireTime (not fetched here)
+                        null
                 );
                 bookings.add(booking);
             }
