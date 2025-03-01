@@ -163,7 +163,7 @@
                     <h2 class="text-xl font-semibold text-white">Manage Drivers</h2>
                 </div>
             </a>
-            <a href="#" class="card p-8 animate-slide-up">
+            <a href="${pageContext.request.contextPath}/views/admin/reports.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="bar-chart" class="w-12 h-12 text-primary mb-4"></i>
                     <h2 class="text-xl font-semibold text-white">View Reports</h2>
