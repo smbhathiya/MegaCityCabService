@@ -1,5 +1,39 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.DriverDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.CarAssignmentDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Driver" %>
+<%@ page import="com.cabservice.megacitycabservice.model.User" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Car" %>
+<%@ page import="java.time.LocalDateTime" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.util.List" %>
+<%!
+  private List<Driver> getAllDrivers() {
+    try {
+      DriverDAO dao = new DriverDAO();
+      return dao.getAllDrivers();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  private List<Car> getUnassignedCars() {
+    try {
+      CarAssignmentDAO dao = new CarAssignmentDAO();
+      return dao.getUnassignedCars();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  private String formatTimestamp(LocalDateTime dateTime) {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    return dateTime.format(formatter);
+  }
+%>
 <%
   UUID adminUUID = (UUID) session.getAttribute("userId");
   String adminId = adminUUID != null ? adminUUID.toString() : null;
@@ -8,6 +42,75 @@
     response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
     return;
   }
+
+  DriverDAO driverDAO = new DriverDAO();
+  CarAssignmentDAO carAssignmentDAO = new CarAssignmentDAO();
+
+  String action = request.getParameter("action");
+  if ("add".equals(action)) {
+    UUID userId = UUID.randomUUID();
+    UUID driverId = UUID.randomUUID();
+    LocalDateTime now = LocalDateTime.now();
+
+    User newUser = new User();
+    newUser.setId(userId);
+    newUser.setName(request.getParameter("name"));
+    newUser.setEmail(request.getParameter("email"));
+    newUser.setPassword(request.getParameter("password")); // Should be hashed in production
+    newUser.setRole("driver");
+    newUser.setEnabled(true);
+    newUser.setCreatedAt(formatTimestamp(now));
+    newUser.setUpdatedAt(formatTimestamp(now));
+
+    Driver newDriver = new Driver();
+    newDriver.setId(driverId);
+    newDriver.setUserId(userId);
+    newDriver.setLicenseNumber(request.getParameter("licenseNumber"));
+    newDriver.setAvailabilityStatus("available");
+    newDriver.setCreatedAt(formatTimestamp(now));
+    newDriver.setUpdatedAt(formatTimestamp(now));
+
+    try {
+      driverDAO.addDriver(newUser, newDriver);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  } else if ("update".equals(action)) {
+    UUID driverId = UUID.fromString(request.getParameter("id"));
+    LocalDateTime now = LocalDateTime.now();
+
+    Driver updatedDriver = new Driver();
+    updatedDriver.setId(driverId);
+    updatedDriver.setLicenseNumber(request.getParameter("licenseNumber"));
+    updatedDriver.setAvailabilityStatus(request.getParameter("availabilityStatus"));
+    updatedDriver.setUpdatedAt(formatTimestamp(now));
+
+    String name = request.getParameter("name");
+
+    try {
+      driverDAO.updateDriver(updatedDriver, name);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  } else if ("delete".equals(action)) {
+    UUID driverId = UUID.fromString(request.getParameter("id"));
+    try {
+      driverDAO.removeDriver(driverId);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  } else if ("assign".equals(action)) {
+    UUID driverId = UUID.fromString(request.getParameter("driverId"));
+    UUID carId = UUID.fromString(request.getParameter("carId"));
+    try {
+      carAssignmentDAO.assignCarToDriver(driverId, carId);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  List<Driver> drivers = getAllDrivers();
+  List<Car> unassignedCars = getUnassignedCars();
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -147,7 +250,7 @@
         <div class="relative">
           <button onclick="toggleProfileDropdown()" class="flex items-center gap-3 focus:outline-none" aria-label="Toggle profile dropdown">
             <i data-lucide="user" class="w-8 h-8 text-primary"></i>
-            <span class="text-lg text-white font-medium">${userName}</span>
+            <span class="text-lg text-white font-medium"><%= session.getAttribute("userName") != null ? session.getAttribute("userName") : "Guest" %></span>
           </button>
           <div id="profileDropdown" class="absolute right-0 mt-2 w-56 bg-dark/95 border border-white/10 rounded-xl shadow-lg hidden">
             <div class="py-2">
@@ -185,7 +288,39 @@
             <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
           </tr>
           </thead>
-          <tbody id="driverTableBody"></tbody>
+          <tbody id="driverTableBody">
+          <%
+            if (drivers != null && !drivers.isEmpty()) {
+              for (Driver driver : drivers) {
+          %>
+          <tr class="border-b border-white/10">
+            <td class="px-6 py-4"><%= driver.getName() != null ? driver.getName() : "N/A" %></td>
+            <td class="px-6 py-4"><%= driver.getEmail() != null ? driver.getEmail() : "N/A" %></td>
+            <td class="px-6 py-4"><%= driver.getLicenseNumber() != null ? driver.getLicenseNumber() : "N/A" %></td>
+            <td class="px-6 py-4"><%= driver.getAvailabilityStatus() != null ? driver.getAvailabilityStatus() : "N/A" %></td>
+            <td class="px-6 py-4"><%= driver.getCarPlateNumber() != null ? driver.getCarPlateNumber() : "Not Assigned" %></td>
+            <td class="px-6 py-4 flex gap-2">
+              <button onclick="openUpdateDriverModal('<%= driver.getId() %>')"
+                      class="bg-blue-600 px-4 py-2 text-white rounded-full btn-primary font-semibold">Edit</button>
+              <button onclick="openAssignCarModal('<%= driver.getId() %>')"
+                      class="bg-green-600 px-4 py-2 text-white rounded-full btn-primary font-semibold">Assign Car</button>
+              <form method="post" action="<%= request.getContextPath() %>/views/admin/manageDrivers.jsp">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="<%= driver.getId() %>">
+                <button type="submit" onclick="return confirm('Are you sure you want to disable this driver?')"
+                        class="bg-red-600 px-4 py-2 text-white rounded-full btn-primary font-semibold">Disable</button>
+              </form>
+            </td>
+          </tr>
+          <%
+            }
+          } else {
+          %>
+          <tr>
+            <td colspan="6" class="text-center text-white py-4">No drivers available</td>
+          </tr>
+          <% } %>
+          </tbody>
         </table>
       </div>
     </div>
@@ -219,7 +354,8 @@
 <div id="addDriverModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="closeAddDriverModal(event)">
   <div class="bg-accent p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-lg mx-4" onclick="event.stopPropagation()">
     <h2 class="text-2xl font-bold text-white mb-6">Add New Driver</h2>
-    <form id="addDriverForm" onsubmit="addDriver(event)" class="modal-form-grid">
+    <form method="post" action="<%= request.getContextPath() %>/views/admin/manageDrivers.jsp" class="modal-form-grid">
+      <input type="hidden" name="action" value="add">
       <div class="mb-4">
         <label for="driver_name" class="block text-sm font-medium text-gray-300 mb-2">Name</label>
         <input type="text" id="driver_name" name="name" required
@@ -252,7 +388,8 @@
 <div id="updateDriverModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="closeUpdateDriverModal(event)">
   <div class="bg-accent p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-lg mx-4" onclick="event.stopPropagation()">
     <h2 class="text-2xl font-bold text-white mb-6">Update Driver</h2>
-    <form id="updateDriverForm" onsubmit="updateDriver(event)" class="modal-form-grid">
+    <form method="post" action="<%= request.getContextPath() %>/views/admin/manageDrivers.jsp" class="modal-form-grid">
+      <input type="hidden" name="action" value="update">
       <input type="hidden" id="update_driver_id" name="id">
       <div class="mb-4">
         <label for="update_driver_name" class="block text-sm font-medium text-gray-300 mb-2">Name</label>
@@ -290,14 +427,30 @@
 <div id="assignCarModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="closeAssignCarModal(event)">
   <div class="bg-accent p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-md mx-4" onclick="event.stopPropagation()">
     <h2 class="text-2xl font-bold text-white mb-6">Assign Car to Driver</h2>
-    <form id="assignCarForm" onsubmit="assignCar(event)">
+    <form method="post" action="<%= request.getContextPath() %>/views/admin/manageDrivers.jsp">
+      <input type="hidden" name="action" value="assign">
       <input type="hidden" id="assign_driver_id" name="driverId">
       <input type="hidden" id="selected_car_id" name="carId">
       <div class="mb-6">
         <label class="block text-sm font-medium text-gray-300 mb-2">Select Car</label>
         <div class="custom-dropdown">
           <div id="car_dropdown_button" class="dropdown-button">-- Select a Car --</div>
-          <div id="car_dropdown_menu" class="dropdown-menu"></div>
+          <div id="car_dropdown_menu" class="dropdown-menu">
+            <% if (unassignedCars != null && !unassignedCars.isEmpty()) {
+              for (Car car : unassignedCars) {
+            %>
+            <div class="dropdown-item" data-car-id="<%= car.getId() %>"
+                 onclick="selectCar('<%= car.getId() %>', '<%= car.getBrand() %>', '<%= car.getModel() %>', '<%= car.getPlateNumber() %>', '<%= car.getCapacity() %>')">
+              <span><%= car.getBrand() != null ? car.getBrand() : "N/A" %></span>
+              <span> <%= car.getModel() != null ? car.getModel() : "N/A" %></span>
+              <span> - <%= car.getPlateNumber() != null ? car.getPlateNumber() : "N/A" %></span>
+              <span> (Capacity: <%= car.getCapacity() %>)</span>
+            </div>
+            <% }
+            } else { %>
+            <div class="dropdown-item">No available cars</div>
+            <% } %>
+          </div>
         </div>
       </div>
       <div class="flex gap-4 justify-end">
@@ -362,98 +515,6 @@
             });
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    fetchDrivers();
-  });
-
-  function fetchDrivers() {
-    const tbody = document.getElementById('driverTableBody');
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Loading...</td></tr>';
-
-    fetch('<%= request.getContextPath() %>/admin/drivers', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include'
-    })
-            .then(response => {
-              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-              return response.json();
-            })
-            .then(drivers => {
-              console.log('Fetched drivers:', drivers);
-              tbody.innerHTML = '';
-              drivers.forEach(driver => {
-                console.log('Processing driver:', driver);
-                const row = document.createElement('tr');
-                row.className = 'border-b border-white/10';
-
-                row.appendChild(createCell(driver.name));
-                row.appendChild(createCell(driver.email));
-                row.appendChild(createCell(driver.licenseNumber));
-                row.appendChild(createCell(driver.availabilityStatus));
-                row.appendChild(createCell(driver.carPlateNumber ? driver.carPlateNumber : 'Not Assigned'));
-
-                const actionCell = document.createElement('td');
-                actionCell.className = "px-6 py-4 flex gap-2";
-
-                const editBtn = document.createElement('button');
-                editBtn.className = "bg-blue-600 px-4 py-2 text-white rounded-full btn-primary font-semibold edit-btn";
-                editBtn.textContent = "Edit";
-                editBtn.dataset.id = driver.id;
-
-                const assignCarBtn = document.createElement('button');
-                assignCarBtn.className = "bg-green-600 px-4 py-2 text-white rounded-full btn-primary font-semibold assign-car-btn";
-                assignCarBtn.textContent = "Assign Car";
-                assignCarBtn.dataset.id = driver.id;
-
-                const removeBtn = document.createElement('button');
-                removeBtn.className = "bg-red-600 px-4 py-2 text-white rounded-full btn-primary font-semibold remove-btn";
-                removeBtn.textContent = "Disable";
-                removeBtn.dataset.id = driver.id;
-
-                actionCell.appendChild(editBtn);
-                actionCell.appendChild(assignCarBtn);
-                actionCell.appendChild(removeBtn);
-                row.appendChild(actionCell);
-
-                tbody.appendChild(row);
-              });
-            })
-            .catch(error => {
-              console.error('Error fetching drivers:', error);
-              tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Error loading data</td></tr>';
-              Toastify({
-                text: "Error fetching drivers: " + error.message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: { background: "red" },
-                stopOnFocus: true
-              }).showToast();
-            });
-  }
-
-  function createCell(text) {
-    const td = document.createElement('td');
-    td.className = "px-6 py-4";
-    td.textContent = text || 'N/A';
-    return td;
-  }
-
-  document.addEventListener("click", function (event) {
-    if (event.target.classList.contains("edit-btn")) {
-      const driverId = event.target.dataset.id;
-      openUpdateDriverModal(driverId);
-    } else if (event.target.classList.contains("remove-btn")) {
-      const driverId = event.target.dataset.id;
-      removeDriver(driverId);
-    } else if (event.target.classList.contains("assign-car-btn")) {
-      const driverId = event.target.dataset.id;
-      openAssignCarModal(driverId);
-    }
-  });
-
   function openAddDriverModal() {
     document.getElementById('addDriverModal').classList.remove('hidden');
   }
@@ -464,105 +525,19 @@
     }
   }
 
-  function addDriver(event) {
-    event.preventDefault();
-    const formData = {
-      name: document.getElementById('driver_name').value,
-      email: document.getElementById('driver_email').value,
-      password: document.getElementById('driver_password').value,
-      licenseNumber: document.getElementById('license_number').value
-    };
-
-    fetch('<%= request.getContextPath() %>/admin/drivers?action=add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(formData)
-    })
-            .then(response => response.json())
-            .then(data => {
-              if (data.status === "success") {
-                Toastify({
-                  text: data.message,
-                  duration: 1500,
-                  close: true,
-                  gravity: "top",
-                  position: "right",
-                  style: { background: "green" },
-                  stopOnFocus: true
-                }).showToast();
-                closeAddDriverModal();
-                document.getElementById('addDriverForm').reset();
-                fetchDrivers();
-              } else {
-                Toastify({
-                  text: data.message || "Failed to add driver",
-                  duration: 3000,
-                  close: true,
-                  gravity: "top",
-                  position: "right",
-                  style: { background: "red" },
-                  stopOnFocus: true
-                }).showToast();
-              }
-            })
-            .catch(error => {
-              console.error('Error adding driver:', error);
-              Toastify({
-                text: "Error adding driver: " + error.message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: { background: "red" },
-                stopOnFocus: true
-              }).showToast();
-            });
-  }
-
   function openUpdateDriverModal(driverId) {
-    fetch('<%= request.getContextPath() %>/admin/drivers', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include'
-    })
-            .then(response => {
-              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-              return response.json();
-            })
-            .then(drivers => {
-              const driver = drivers.find(d => d.id === driverId);
-              if (driver) {
-                document.getElementById('update_driver_id').value = driver.id;
-                document.getElementById('update_driver_name').value = driver.name || '';
-                document.getElementById('update_driver_email').value = driver.email || '';
-                document.getElementById('update_license_number').value = driver.licenseNumber || '';
-                document.getElementById('update_availability_status').value = driver.availabilityStatus || 'available';
-                document.getElementById('updateDriverModal').classList.remove('hidden');
-              } else {
-                Toastify({
-                  text: "Driver not found",
-                  duration: 3000,
-                  close: true,
-                  gravity: "top",
-                  position: "right",
-                  style: { background: "red" },
-                  stopOnFocus: true
-                }).showToast();
-              }
-            })
-            .catch(error => {
-              console.error('Error fetching driver details:', error);
-              Toastify({
-                text: "Error loading driver details: " + error.message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: { background: "red" },
-                stopOnFocus: true
-              }).showToast();
-            });
+    <% if (drivers != null) { %>
+    const drivers = <%= new com.google.gson.Gson().toJson(drivers) %>;
+    const driver = drivers.find(d => d.id === driverId);
+    if (driver) {
+      document.getElementById('update_driver_id').value = driver.id;
+      document.getElementById('update_driver_name').value = driver.name || '';
+      document.getElementById('update_driver_email').value = driver.email || '';
+      document.getElementById('update_license_number').value = driver.licenseNumber || '';
+      document.getElementById('update_availability_status').value = driver.availabilityStatus || 'available';
+      document.getElementById('updateDriverModal').classList.remove('hidden');
+    }
+    <% } %>
   }
 
   function closeUpdateDriverModal(event) {
@@ -571,306 +546,50 @@
     }
   }
 
-  function updateDriver(event) {
-    event.preventDefault();
-    const formData = {
-      id: document.getElementById('update_driver_id').value,
-      name: document.getElementById('update_driver_name').value,
-      email: document.getElement.getElementById('update_driver_email').value,
-      licenseNumber: document.getElementById('update_license_number').value,
-      availabilityStatus: document.getElementById('update_availability_status').value
-    };
-
-    fetch('<%= request.getContextPath() %>/admin/drivers?action=update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(formData)
-    })
-            .then(response => response.json())
-            .then(data => {
-              if (data.status === "success") {
-                Toastify({
-                  text: data.message,
-                  duration: 1500,
-                  close: true,
-                  gravity: "top",
-                  position: "right",
-                  style: { background: "green" },
-                  stopOnFocus: true
-                }).showToast();
-                closeUpdateDriverModal();
-                fetchDrivers();
-              } else {
-                Toastify({
-                  text: data.message || "Failed to update driver",
-                  duration: 3000,
-                  close: true,
-                  gravity: "top",
-                  position: "right",
-                  style: { background: "red" },
-                  stopOnFocus: true
-                }).showToast();
-              }
-            })
-            .catch(error => {
-              console.error('Error updating driver:', error);
-              Toastify({
-                text: "Error updating driver: " + error.message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: { background: "red" },
-                stopOnFocus: true
-              }).showToast();
-            });
-  }
-
-  function removeDriver(driverId) {
-    if (confirm("Are you sure you want to remove this driver?")) {
-      fetch('<%= request.getContextPath() %>/admin/drivers?id=' + driverId, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
-      })
-              .then(response => response.json())
-              .then(data => {
-                if (data.status === "success") {
-                  Toastify({
-                    text: data.message,
-                    duration: 1500,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "green" },
-                    stopOnFocus: true
-                  }).showToast();
-                  fetchDrivers();
-                } else {
-                  Toastify({
-                    text: data.message || "Failed to disable driver",
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                  }).showToast();
-                }
-              })
-              .catch(error => {
-                console.error('Error removing driver:', error);
-                Toastify({
-                  text: "Error removing driver: " + error.message,
-                  duration: 3000,
-                  close: true,
-                  gravity: "top",
-                  position: "right",
-                  style: { background: "red" },
-                  stopOnFocus: true
-                }).showToast();
-              });
-    }
-  }
-
   function openAssignCarModal(driverId) {
     document.getElementById('assign_driver_id').value = driverId;
-    const dropdownButton = document.getElementById('car_dropdown_button');
-    const dropdownMenu = document.getElementById('car_dropdown_menu');
-    dropdownButton.textContent = 'Loading cars...';
-    dropdownMenu.innerHTML = '';
-
-    fetch('<%= request.getContextPath() %>/admin/assign-car?availableOnly=true', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include'
-    })
-            .then(response => {
-              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-              return response.json();
-            })
-            .then(cars => {
-              console.log('Fetched unassigned cars:', cars);
-              dropdownButton.textContent = '-- Select a Car --';
-              dropdownMenu.innerHTML = '';
-
-              if (cars.length === 0) {
-                const noCarItem = document.createElement('div');
-                noCarItem.className = 'dropdown-item';
-                noCarItem.textContent = 'No available cars';
-                dropdownMenu.appendChild(noCarItem);
-              } else {
-                cars.forEach(car => {
-                  console.log('Processing car:', car);
-
-                  const item = document.createElement('div');
-                  item.className = 'dropdown-item';
-
-                  // Dropdown list item rendering with spans
-                  const brandSpan = document.createElement('span');
-                  brandSpan.textContent = car.brand || 'N/A';
-
-                  const modelSpan = document.createElement('span');
-                  modelSpan.textContent = ' ' + (car.model || 'N/A');
-
-                  const plateSpan = document.createElement('span');
-                  plateSpan.textContent = ' - ' + (car.plateNumber || 'N/A');
-
-                  const capacitySpan = document.createElement('span');
-                  capacitySpan.textContent = ' (Capacity: ' + (car.capacity || 'N/A') + ')';
-
-                  item.appendChild(brandSpan);
-                  item.appendChild(modelSpan);
-                  item.appendChild(plateSpan);
-                  item.appendChild(capacitySpan);
-
-                  item.dataset.carId = car.id;
-
-                  // Store car data in a closure to preserve scope
-                  const carData = {
-                    id: car.id,
-                    brand: car.brand || 'N/A',
-                    model: car.model || 'N/A',
-                    plateNumber: car.plateNumber || 'N/A',
-                    capacity: car.capacity || 'N/A'
-                  };
-
-                  item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    document.getElementById('selected_car_id').value = carData.id;
-
-                    // Clear existing content in dropdownButton
-                    dropdownButton.innerHTML = '';
-
-                    // Use same span technique for selected item as in dropdown list
-                    const selectedBrandSpan = document.createElement('span');
-                    selectedBrandSpan.textContent = carData.brand;
-
-                    const selectedModelSpan = document.createElement('span');
-                    selectedModelSpan.textContent = ' ' + carData.model;
-
-                    const selectedPlateSpan = document.createElement('span');
-                    selectedPlateSpan.textContent = ' - ' + carData.plateNumber;
-
-                    const selectedCapacitySpan = document.createElement('span');
-                    selectedCapacitySpan.textContent = ' (Capacity: ' + carData.capacity + ')';
-
-                    dropdownButton.appendChild(selectedBrandSpan);
-                    dropdownButton.appendChild(selectedModelSpan);
-                    dropdownButton.appendChild(selectedPlateSpan);
-                    dropdownButton.appendChild(selectedCapacitySpan);
-
-                    dropdownMenu.style.display = 'none';
-                  });
-
-                  dropdownMenu.appendChild(item);
-                });
-              }
-
-              // Toggle dropdown on button click
-              dropdownButton.onclick = (e) => {
-                e.stopPropagation();
-                dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
-              };
-
-              document.getElementById('assignCarModal').classList.remove('hidden');
-            })
-            .catch(error => {
-              console.error('Error fetching available cars:', error);
-              dropdownButton.textContent = 'Error loading cars';
-              Toastify({
-                text: "Error loading cars: " + error.message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: { background: "red" },
-                stopOnFocus: true
-              }).showToast();
-            });
+    document.getElementById('selected_car_id').value = '';
+    document.getElementById('car_dropdown_button').textContent = '-- Select a Car --';
+    document.getElementById('assignCarModal').classList.remove('hidden');
   }
 
-  // Close modal function
   function closeAssignCarModal(event) {
     if (!event || event.target === document.getElementById('assignCarModal')) {
       document.getElementById('assignCarModal').classList.add('hidden');
     }
   }
 
-  // Close dropdown when clicking outside
-  document.addEventListener("click", function (e) {
+  function selectCar(carId, brand, model, plateNumber, capacity) {
+    document.getElementById('selected_car_id').value = carId;
     const dropdownButton = document.getElementById('car_dropdown_button');
-    const dropdownMenu = document.getElementById('car_dropdown_menu');
+    dropdownButton.innerHTML = '';
+    const brandSpan = document.createElement('span');
+    brandSpan.textContent = brand;
+    const modelSpan = document.createElement('span');
+    modelSpan.textContent = ' ' + model;
+    const plateSpan = document.createElement('span');
+    plateSpan.textContent = ' - ' + plateNumber;
+    const capacitySpan = document.createElement('span');
+    capacitySpan.textContent = ' (Capacity: ' + capacity + ')';
+    dropdownButton.appendChild(brandSpan);
+    dropdownButton.appendChild(modelSpan);
+    dropdownButton.appendChild(plateSpan);
+    dropdownButton.appendChild(capacitySpan);
+    document.getElementById('car_dropdown_menu').style.display = 'none';
+  }
 
+  const dropdownButton = document.getElementById('car_dropdown_button');
+  const dropdownMenu = document.getElementById('car_dropdown_menu');
+  dropdownButton.onclick = (e) => {
+    e.stopPropagation();
+    dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+  };
+
+  document.addEventListener("click", function (e) {
     if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
       dropdownMenu.style.display = 'none';
     }
   });
-
-  function assignCar(event) {
-    event.preventDefault();
-    const driverId = document.getElementById('assign_driver_id').value;
-    const carId = document.getElementById('selected_car_id').value;
-
-    if (!carId) {
-      Toastify({
-        text: "Please select a car",
-        duration: 3000,
-        close: true,
-        gravity: "top",
-        position: "right",
-        style: { background: "red" },
-        stopOnFocus: true
-      }).showToast();
-      return;
-    }
-
-    fetch('<%= request.getContextPath() %>/admin/assign-car', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ driverId, carId })
-    })
-            .then(response => response.json())
-            .then(data => {
-              if (data.status === "success") {
-                Toastify({
-                  text: "Car assigned successfully",
-                  duration: 1500,
-                  close: true,
-                  gravity: "top",
-                  position: "right",
-                  style: { background: "green" },
-                  stopOnFocus: true
-                }).showToast();
-                closeAssignCarModal();
-                fetchDrivers();
-              } else {
-                Toastify({
-                  text: data.message || "Failed to assign car",
-                  duration: 3000,
-                  close: true,
-                  gravity: "top",
-                  position: "right",
-                  style: { background: "red" },
-                  stopOnFocus: true
-                }).showToast();
-              }
-            })
-            .catch(error => {
-              console.error('Error assigning car:', error);
-              Toastify({
-                text: "Error assigning car: " + error.message,
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: { background: "red" },
-                stopOnFocus: true
-              }).showToast();
-            });
-  }
 </script>
 
 <!-- Logout Confirmation Modal -->
