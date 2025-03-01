@@ -1,5 +1,14 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.BookingDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Booking" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.DriverPaymentDAO" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.time.LocalDate" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.text.DecimalFormat" %>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -83,6 +92,87 @@
     </style>
 </head>
 <body class="bg-dark text-light">
+<%
+    UUID driverUUID = (UUID) session.getAttribute("userId");
+    String driverId = driverUUID != null ? driverUUID.toString() : null;
+    BookingDAO bookingDAO = new BookingDAO();
+    DriverPaymentDAO driverPaymentDAO = new DriverPaymentDAO();
+    DecimalFormat df = new DecimalFormat("#.##");
+
+    if (driverId == null) {
+        response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+        return;
+    }
+
+    // Fetch dashboard data
+    double totalEarnings = 0.0;
+    int activeBookings = 0;
+    List<DriverPaymentDAO.DriverPayment> payments = null;
+    List<Booking> bookings = null;
+    String errorMessage = null;
+
+    try {
+        payments = driverPaymentDAO.getPaymentHistoryByDriverId(driverId);
+        totalEarnings = payments.stream().mapToDouble(p -> p.amount).sum();
+        bookings = bookingDAO.getBookingsByDriverId(UUID.fromString(driverId));
+        activeBookings = (int) bookings.stream().filter(b -> "confirmed".equalsIgnoreCase(b.getBookingStatus())).count();
+    } catch (Exception e) {
+        errorMessage = "Error fetching dashboard data: " + e.getMessage();
+        totalEarnings = -1;
+        activeBookings = -1;
+    }
+
+    // Prepare earnings chart data (last 30 days)
+    LocalDate now = LocalDate.now();
+    LocalDate thirtyDaysAgo = now.minusDays(30);
+    Map<String, Double> dailyEarnings = new HashMap<>();
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    if (payments != null) {
+        for (DriverPaymentDAO.DriverPayment payment : payments) {
+            LocalDate paymentDate = LocalDate.parse(payment.paymentDate, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            if (!paymentDate.isBefore(thirtyDaysAgo) && !paymentDate.isAfter(now)) {
+                String dateKey = paymentDate.format(dateFormatter);
+                dailyEarnings.put(dateKey, dailyEarnings.getOrDefault(dateKey, 0.0) + payment.amount);
+            }
+        }
+    }
+
+    StringBuilder labelsJson = new StringBuilder("[");
+    StringBuilder earningsJson = new StringBuilder("[");
+    for (int i = 0; i <= 30; i++) {
+        LocalDate date = now.minusDays(i);
+        String dateKey = date.format(dateFormatter);
+        labelsJson.append("\"").append(date.format(DateTimeFormatter.ofPattern("d MMM"))).append("\"");
+        earningsJson.append(dailyEarnings.getOrDefault(dateKey, 0.0));
+        if (i < 30) {
+            labelsJson.append(",");
+            earningsJson.append(",");
+        }
+    }
+    labelsJson.append("]");
+    earningsJson.append("]");
+
+    // Prepare calendar events
+    StringBuilder eventsJson = new StringBuilder("[");
+    if (bookings != null) {
+        for (int i = 0; i < bookings.size(); i++) {
+            Booking booking = bookings.get(i);
+            eventsJson.append("{")
+                    .append("\"title\":\"").append(booking.getBookingNumber()).append("\",")
+                    .append("\"start\":\"").append(booking.getHireDate()).append("\",")
+                    .append("\"allDay\":true,")
+                    .append("\"backgroundColor\":\"#FCC603\",")
+                    .append("\"borderColor\":\"#CC9F02\",")
+                    .append("\"textColor\":\"#1A1A1A\"")
+                    .append("}");
+            if (i < bookings.size() - 1) {
+                eventsJson.append(",");
+            }
+        }
+    }
+    eventsJson.append("]");
+%>
 
 <!-- Navbar -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/95 backdrop-blur-lg z-50 shadow-md">
@@ -118,29 +208,24 @@
 <!-- Main Content -->
 <main class="pt-28 pb-12 px-6">
     <div class="container mx-auto">
-        <%
-            UUID driverUUID = (UUID) session.getAttribute("userId");
-            String driverId = driverUUID != null ? driverUUID.toString() : null;
-            if (driverId != null) {
-        %>
         <!-- Dashboard Overview -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12 animate-slide-up">
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Total Earnings</p>
-                <p id="totalEarnings" class="text-3xl font-bold text-white">Loading...</p>
+                <p id="totalEarnings" class="text-3xl font-bold text-white"><%= totalEarnings >= 0 ? "Rs. " + df.format(totalEarnings) : "Error" %></p>
             </div>
             <div class="overview-card rounded-xl p-6">
-                <p class="text-sm text-light/70 mb-2">Active Bookings</p><div class="overview-card rounded-xl p-6">--%>
-                <%--                <p class="text-sm text-light/70 mb-2">Vehicle Status</p>--%>
-                <%--                <p class="text-3xl font-bold text-green-500">Good</p>--%>
-                <%--            </div>--%>
-                <%--            <div class="overview-card rounded-xl p-6">--%>
-                <%--                <p class="text-sm text-light/70 mb-2">Rating</p>--%>
-                <%--                <p class="text-3xl font-bold text-white">4.8/5.0</p>--%>
-                <%--            </div>
-                                <p id="activeBookings" class="text-3xl font-bold text-white">Loading...</p>
-                            </div>
-                <%--            --%>
+                <p class="text-sm text-light/70 mb-2">Active Bookings</p>
+                <p id="activeBookings" class="text-3xl font-bold text-white"><%= activeBookings >= 0 ? activeBookings : "Error" %></p>
+            </div>
+            <div class="overview-card rounded-xl p-6">
+                <p class="text-sm text-light/70 mb-2">Vehicle Status</p>
+                <p class="text-3xl font-bold text-green-500">Good</p>
+            </div>
+            <div class="overview-card rounded-xl p-6">
+                <p class="text-sm text-light/70 mb-2">Rating</p>
+                <p class="text-3xl font-bold text-white">4.8/5.0</p>
+            </div>
         </div>
 
         <!-- Cards Grid -->
@@ -178,15 +263,6 @@
                 <div id="calendar"></div>
             </div>
         </div>
-        <%
-            } else {
-                Object userIdObj = session.getAttribute("userId");
-                if (userIdObj == null || !(userIdObj instanceof UUID)) {
-                    response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
-                    return;
-                }
-            }
-        %>
     </div>
 
     <!-- Footer -->
@@ -291,218 +367,80 @@
         }
     }
 
-    // Fetch and update Total Earnings
-    function fetchTotalEarnings() {
-        fetch('<%= request.getContextPath() %>/driver/payments/history', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Total earnings response:', data);
-                if (data.status === 'success' && Array.isArray(data.data)) {
-                    const payments = data.data;
-                    const totalEarnings = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-                    document.getElementById('totalEarnings').textContent = "Rs. "+totalEarnings.toFixed(2);
-                } else {
-                    console.error('Total earnings API error:', data.data || 'No error message');
-                    document.getElementById('totalEarnings').textContent = 'Error';
-                    Toastify({ text: "Failed to load total earnings: " + (data.data || 'Unknown error'), duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching total earnings:', error);
-                document.getElementById('totalEarnings').textContent = 'Error';
-                Toastify({ text: "Error fetching total earnings: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-            });
-    }
-
-    // Fetch and update Active Bookings
-    function fetchActiveBookings() {
-        fetch('<%= request.getContextPath() %>/driver/bookings?id=<%= driverId %>', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Active bookings response:', data);
-                if (data.status === 'success' && Array.isArray(data.bookings)) {
-                    const bookings = data.bookings;
-                    const activeCount = bookings.filter(booking => booking.bookingStatus === 'confirmed').length;
-                    document.getElementById('activeBookings').textContent = activeCount;
-                } else {
-                    console.error('Active bookings API error:', data.message || 'No error message');
-                    document.getElementById('activeBookings').textContent = 'Error';
-                    Toastify({ text: "Failed to load active bookings: " + (data.message || 'Unknown error'), duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching active bookings:', error);
-                document.getElementById('activeBookings').textContent = 'Error';
-                Toastify({ text: "Error fetching active bookings: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-            });
-    }
-
-    // Fetch and populate Performance Chart (Last 30 Days)
-    function fetchEarningsData() {
-        fetch('<%= request.getContextPath() %>/driver/payments/history', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Payment history response:', data);
-                if (data.status === 'success' && Array.isArray(data.data)) {
-                    const payments = data.data;
-                    const now = new Date();
-                    const thirtyDaysAgo = new Date(now);
-                    thirtyDaysAgo.setDate(now.getDate() - 30);
-
-                    // Filter payments for the last 30 days and aggregate by date
-                    const dailyEarnings = {};
-                    payments.forEach(payment => {
-                        const paymentDate = new Date(payment.paymentDate);
-                        if (paymentDate >= thirtyDaysAgo && paymentDate <= now) {
-                            const dateKey = paymentDate.toISOString().split('T')[0]; // YYYY-MM-DD
-                            dailyEarnings[dateKey] = (dailyEarnings[dateKey] || 0) + (payment.amount || 0);
-                        }
-                    });
-
-                    // Generate labels and data for the last 30 days
-                    const labels = [];
-                    const earnings = [];
-                    for (let i = 0; i <= 30; i++) {
-                        const date = new Date(now);
-                        date.setDate(now.getDate() - i);
-                        const dateKey = date.toISOString().split('T')[0];
-                        labels.push(date.toLocaleDateString('default', { day: 'numeric', month: 'short' }));
-                        earnings.push(dailyEarnings[dateKey] || 0);
-                    }
-
-                    labels.reverse();
-                    earnings.reverse();
-
-                    console.log('Chart labels:', labels);
-                    console.log('Chart earnings:', earnings);
-
-                    const ctx = document.getElementById('performanceChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Earnings (Last 30 Days)',
-                                data: earnings,
-                                borderColor: '#FCC603',
-                                backgroundColor: 'rgba(252, 198, 3, 0.2)',
-                                fill: true,
-                                tension: 0.4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                                    ticks: { color: '#F5F5F5' }
-                                },
-                                x: {
-                                    grid: { display: false },
-                                    ticks: { color: '#F5F5F5', maxRotation: 45, minRotation: 45 }
-                                }
-                            },
-                            plugins: {
-                                legend: { labels: { color: '#F5F5F5' } }
-                            }
-                        }
-                    });
-                } else {
-                    console.error('Payment history API error:', data.data || 'No error message provided');
-                    Toastify({ text: "Failed to load earnings data: " + (data.data || 'Unknown error'), duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching payment history:', error);
-                Toastify({ text: "Error fetching earnings data: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-            });
-    }
-
-    // Fetch and populate Calendar
-    function fetchBookingData() {
-        fetch('<%= request.getContextPath() %>/driver/bookings?id=<%= driverId %>', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Bookings response:', data);
-                if (data.status === 'success' && Array.isArray(data.bookings)) {
-                    const bookings = data.bookings;
-                    const events = bookings.map(booking => ({
-                        title: booking.bookingNumber,
-                        start: booking.hireDate,
-                        allDay: true,
-                        backgroundColor: '#FCC603',
-                        borderColor: '#CC9F02',
-                        textColor: '#1A1A1A'
-                    }));
-
-                    console.log('Calendar events:', events);
-
-                    const calendarEl = document.getElementById('calendar');
-                    const calendar = new FullCalendar.Calendar(calendarEl, {
-                        initialView: 'dayGridMonth',
-                        height: 'auto',
-                        events: events,
-                        headerToolbar: {
-                            left: 'prev,next',
-                            center: 'title',
-                            right: 'today'
-                        },
-                        themeSystem: 'standard',
-                        dayMaxEvents: true,
-                        eventClick: function(info) {
-                            alert('Booking ID: ' + info.event.title);
-                        },
-                        eventContent: function(arg) {
-                            return { html: '<div>' + arg.event.title + '</div>' };
-                        }
-                    });
-                    calendar.render();
-                } else {
-                    console.error('Bookings API error:', data.message || 'No error message provided');
-                    Toastify({ text: "Failed to load bookings: " + (data.message || 'Unknown error'), duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching bookings:', error);
-                Toastify({ text: "Error fetching bookings: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-            });
-    }
-
-    // Initialize on page load
+    // Initialize Chart and Calendar with server-side data
     document.addEventListener('DOMContentLoaded', function () {
-        fetchTotalEarnings();
-        fetchActiveBookings();
-        fetchEarningsData();
-        fetchBookingData();
+        // Performance Chart
+        const labels = <%= labelsJson.toString() %>;
+        const earnings = <%= earningsJson.toString() %>;
+
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Earnings (Last 30 Days)',
+                    data: earnings,
+                    borderColor: '#FCC603',
+                    backgroundColor: 'rgba(252, 198, 3, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#F5F5F5' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#F5F5F5', maxRotation: 45, minRotation: 45 }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#F5F5F5' } }
+                }
+            }
+        });
+
+        // Calendar
+        const events = <%= eventsJson.toString() %>;
+
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            events: events,
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: 'today'
+            },
+            themeSystem: 'standard',
+            dayMaxEvents: true,
+            eventClick: function(info) {
+                alert('Booking ID: ' + info.event.title);
+            },
+            eventContent: function(arg) {
+                return { html: '<div>' + arg.event.title + '</div>' };
+            }
+        });
+        calendar.render();
+
+        <% if (errorMessage != null) { %>
+        Toastify({
+            text: "<%= errorMessage %>",
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: { background: "red" },
+            stopOnFocus: true
+        }).showToast();
+        <% } %>
     });
 </script>
 
