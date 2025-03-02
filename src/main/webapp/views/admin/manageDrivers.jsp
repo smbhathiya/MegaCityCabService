@@ -8,6 +8,7 @@
 <%@ page import="java.time.LocalDateTime" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
 <%@ page import="java.util.List" %>
+<%@ page import="com.cabservice.megacitycabservice.util.PasswordUtil" %>
 <%!
   private List<Driver> getAllDrivers() {
     try {
@@ -56,7 +57,7 @@
     newUser.setId(userId);
     newUser.setName(request.getParameter("name"));
     newUser.setEmail(request.getParameter("email"));
-    newUser.setPassword(request.getParameter("password")); // Should be hashed in production
+    newUser.setPassword(PasswordUtil.hashPassword(request.getParameter("password")));
     newUser.setRole("driver");
     newUser.setEnabled(true);
     newUser.setCreatedAt(formatTimestamp(now));

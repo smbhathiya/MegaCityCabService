@@ -1,9 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
-<%@ page import="com.cabservice.megacitycabservice.dao.BookingDAO" %>
 <%@ page import="com.cabservice.megacitycabservice.model.Booking" %>
 <%@ page import="com.cabservice.megacitycabservice.model.Car" %>
-<%@ page import="java.util.Random" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,64 +51,10 @@
         return;
     }
 
-    BookingDAO bookingDAO = new BookingDAO();
-    String errorMessage = null;
-    String successMessage = null;
-    String bookingId = null;
-    Booking newBooking = null;
-
-    if ("POST".equalsIgnoreCase(request.getMethod())) {
-        String action = request.getParameter("action");
-        if ("submitBooking".equals(action)) {
-            String pickupLocation = request.getParameter("pickup_location");
-            String dropoffLocation = request.getParameter("dropoff_location");
-            String hireDate = request.getParameter("hire_date");
-            String hireTime = request.getParameter("hire_time");
-            int passengerCount = Integer.parseInt(request.getParameter("passenger_count"));
-
-            try {
-                Random random = new Random();
-                String bookingNumber = "BOOK-" + String.format("%06d", random.nextInt(1000000));
-                double distance = 10 + (random.nextDouble() * 50); // Simulated distance (10-60 km)
-                double totalFare = (distance * 50) + (passengerCount * 10); // Simulated fare
-
-                UUID newBookingId = UUID.randomUUID();
-                newBooking = new Booking(
-                        newBookingId, bookingNumber, UUID.fromString(customerId), null, null,
-                        pickupLocation, dropoffLocation, distance, "pending", totalFare, "pending", hireDate, hireTime
-                );
-                boolean added = bookingDAO.addBooking(newBooking);
-
-                if (added) {
-                    bookingId = newBookingId.toString();
-                    session.setAttribute("newBooking", newBooking);
-                    session.setAttribute("bookingId", bookingId);
-                } else {
-                    errorMessage = "Failed to create booking.";
-                }
-            } catch (Exception e) {
-                errorMessage = "Error creating booking: " + e.getMessage();
-            }
-        } else if ("confirmBooking".equals(action)) {
-            bookingId = request.getParameter("bookingId");
-            String status = request.getParameter("status");
-            try {
-                boolean updated = bookingDAO.updateBookingStatus(UUID.fromString(bookingId), status);
-                if (updated) {
-                    successMessage = "Booking " + status + " successfully!";
-                    session.removeAttribute("newBooking");
-                    session.removeAttribute("bookingId");
-                } else {
-                    errorMessage = "Failed to update booking status.";
-                }
-            } catch (Exception e) {
-                errorMessage = "Error updating booking status: " + e.getMessage();
-            }
-        }
-    }
-
-    if (bookingId != null && session.getAttribute("newBooking") != null) {
-        newBooking = (Booking) session.getAttribute("newBooking");
+    String errorMessage = (String) session.getAttribute("errorMessage");
+    Booking newBooking = (Booking) session.getAttribute("newBooking");
+    if (errorMessage != null) {
+        session.removeAttribute("errorMessage");
     }
 %>
 <!-- Navbar -->
@@ -144,32 +88,33 @@
 <!-- Main Content -->
 <main class="flex-1 flex items-center justify-center px-6 py-28">
     <div class="form-container p-8 rounded-xl shadow-2xl w-full max-w-2xl mx-auto animate-slide-up">
+        <% if (newBooking == null) { %>
         <h2 class="text-3xl font-bold text-white mb-8 text-center">Book a Ride</h2>
-        <form id="bookingForm" method="post" action="<%= request.getContextPath() %>/views/customer/addBooking.jsp">
-            <input type="hidden" name="action" value="submitBooking">
+        <form method="post" action="<%= request.getContextPath() %>/booking">
+            <input type="hidden" name="customer_id" value="<%= customerId %>">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <div class="mb-6">
                         <label for="pickup_location" class="block text-sm font-medium text-gray-300 mb-2">Pickup Location</label>
-                        <input type="text" id="pickup_location" name="pickup_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary" value="<%= request.getParameter("pickup_location") != null ? request.getParameter("pickup_location") : "" %>">
+                        <input type="text" id="pickup_location" name="pickup_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary">
                     </div>
                     <div class="mb-6">
                         <label for="hire_date" class="block text-sm font-medium text-gray-300 mb-2">Hire Date</label>
-                        <input type="date" id="hire_date" name="hire_date" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary" value="<%= request.getParameter("hire_date") != null ? request.getParameter("hire_date") : "" %>">
+                        <input type="date" id="hire_date" name="hire_date" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary">
                     </div>
                     <div class="mb-6">
                         <label for="passenger_count" class="block text-sm font-medium text-gray-300 mb-2">Passenger Count</label>
-                        <input type="number" id="passenger_count" name="passenger_count" min="1" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary" value="<%= request.getParameter("passenger_count") != null ? request.getParameter("passenger_count") : "" %>">
+                        <input type="number" id="passenger_count" name="passenger_count" min="1" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary">
                     </div>
                 </div>
                 <div>
                     <div class="mb-6">
                         <label for="dropoff_location" class="block text-sm font-medium text-gray-300 mb-2">Drop-off Location</label>
-                        <input type="text" id="dropoff_location" name="dropoff_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary" value="<%= request.getParameter("dropoff_location") != null ? request.getParameter("dropoff_location") : "" %>">
+                        <input type="text" id="dropoff_location" name="dropoff_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary">
                     </div>
                     <div class="mb-6">
                         <label for="hire_time" class="block text-sm font-medium text-gray-300 mb-2">Hire Time</label>
-                        <input type="time" id="hire_time" name="hire_time" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary" value="<%= request.getParameter("hire_time") != null ? request.getParameter("hire_time") : "" %>">
+                        <input type="time" id="hire_time" name="hire_time" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary">
                     </div>
                 </div>
             </div>
@@ -177,6 +122,28 @@
                 <i data-lucide="check" class="w-5 h-5"></i> Book Now
             </button>
         </form>
+        <% } else { %>
+        <h2 class="text-3xl font-bold text-white mb-8 text-center">Booking Details</h2>
+        <div class="text-gray-300 mb-6">
+            <p><strong>Booking Number:</strong> <%= newBooking.getBookingNumber() %></p>
+            <p><strong>Car:</strong> <%= newBooking.getCarDetails() != null ? newBooking.getCarDetails().getBrand() + " " + newBooking.getCarDetails().getModel() + " (" + newBooking.getCarDetails().getPlateNumber() + ")" : "N/A" %></p>
+            <p><strong>Pickup:</strong> <%= newBooking.getPickupLocation() %></p>
+            <p><strong>Drop-off:</strong> <%= newBooking.getDropoffLocation() %></p>
+            <p><strong>Date:</strong> <%= newBooking.getHireDate() %></p>
+            <p><strong>Time:</strong> <%= newBooking.getHireTime() %></p>
+            <p><strong>Distance:</strong> <%= newBooking.getDistance() > 0 ? String.format("%.2f km", newBooking.getDistance()) : "N/A" %></p>
+            <p><strong>Total Fare:</strong> <%= newBooking.getTotalFare() > 0 ? "Rs. " + String.format("%.2f", newBooking.getTotalFare()) : "N/A" %></p>
+        </div>
+        <form method="post" action="<%= request.getContextPath() %>/booking">
+            <input type="hidden" name="action" value="confirmBooking">
+            <input type="hidden" name="bookingId" value="<%= newBooking.getId().toString() %>">
+            <div class="flex gap-4 justify-end">
+                <button type="submit" name="status" value="confirmed" class="bg-primary text-dark px-6 py-2 rounded-full btn-primary font-semibold">Confirm</button>
+                <button type="submit" name="status" value="cancelled" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 font-semibold">Cancel</button>
+            </div>
+        </form>
+        <% session.removeAttribute("newBooking"); %>
+        <% } %>
         <p class="mt-6 text-center text-gray-400 text-sm">
             Back to <a href="${pageContext.request.contextPath}/views/customer/dashboard.jsp" class="text-primary hover:underline font-medium">Dashboard</a>
         </p>
@@ -192,44 +159,13 @@
                 <p class="text-gray-400">© <%= java.time.Year.now().getValue() %> All rights reserved</p>
             </div>
             <div class="flex gap-4 mt-4 md:mt-0">
-                <a href="#" class="text-primary hover:text-primary-700">
-                    <i data-lucide="twitter" class="w-6 h-6"></i>
-                </a>
-                <a href="#" class="text-primary hover:text-primary-700">
-                    <i data-lucide="linkedin" class="w-6 h-6"></i>
-                </a>
-                <a href="#" class="text-primary hover:text-primary-700">
-                    <i data-lucide="github" class="w-6 h-6"></i>
-                </a>
+                <a href="#" class="text-primary hover:text-primary-700"><i data-lucide="twitter" class="w-6 h-6"></i></a>
+                <a href="#" class="text-primary hover:text-primary-700"><i data-lucide="linkedin" class="w-6 h-6"></i></a>
+                <a href="#" class="text-primary hover:text-primary-700"><i data-lucide="github" class="w-6 h-6"></i></a>
             </div>
         </div>
     </div>
 </footer>
-
-<!-- Booking Confirmation Modal -->
-<div id="bookingModal" class="<% if (newBooking != null) { %>block<% } else { %>hidden<% } %> fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-accent p-6 rounded-xl shadow-2xl max-w-md w-full">
-        <h3 class="text-xl font-bold text-white mb-4">Booking Details</h3>
-        <div class="text-gray-300 mb-6">
-            <p><strong>Booking Number:</strong> <span id="bookingNumber"><%= newBooking != null ? newBooking.getBookingNumber() : "" %></span></p>
-            <p><strong>Car:</strong> <span id="carDetails"><%= newBooking != null && newBooking.getCarDetails() != null ? newBooking.getCarDetails().getBrand() + " " + newBooking.getCarDetails().getModel() + " (" + newBooking.getCarDetails().getPlateNumber() + ")" : "N/A" %></span></p>
-            <p><strong>Pickup:</strong> <span id="pickupLocation"><%= newBooking != null ? newBooking.getPickupLocation() : "" %></span></p>
-            <p><strong>Drop-off:</strong> <span id="dropoffLocation"><%= newBooking != null ? newBooking.getDropoffLocation() : "" %></span></p>
-            <p><strong>Date:</strong> <span id="hireDate"><%= newBooking != null ? newBooking.getHireDate() : "" %></span></p>
-            <p><strong>Time:</strong> <span id="hireTime"><%= newBooking != null ? newBooking.getHireTime() : "" %></span></p>
-            <p><strong>Distance:</strong> <span id="distance"><%= newBooking != null && newBooking.getDistance() > 0 ? String.format("%.2f km", newBooking.getDistance()) : "N/A" %></span></p>
-            <p><strong>Total Fare:</strong> <span id="totalFare"><%= newBooking != null && newBooking.getTotalFare() > 0 ? "Rs. " + String.format("%.2f", newBooking.getTotalFare()) : "N/A" %></span></p>
-        </div>
-        <form method="post" action="<%= request.getContextPath() %>/views/customer/addBooking.jsp">
-            <input type="hidden" name="action" value="confirmBooking">
-            <input type="hidden" name="bookingId" value="<%= bookingId != null ? bookingId : "" %>">
-            <div class="flex gap-4 justify-end">
-                <button type="submit" name="status" value="confirmed" class="bg-primary text-dark px-6 py-2 rounded-full btn-primary font-semibold">Confirm</button>
-                <button type="submit" name="status" value="cancelled" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 font-semibold">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <!-- Logout Confirmation Modal -->
 <div id="logoutModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -279,7 +215,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 Toastify({
                     text: "An error occurred during logout.",
                     duration: 3000,
@@ -299,18 +234,6 @@
         gravity: "top",
         position: "right",
         style: { background: "red" }
-    }).showToast();
-    <% } else if (successMessage != null) { %>
-    Toastify({
-        text: "<%= successMessage %>",
-        duration: 3000,
-        close: true,
-        gravity: "top",
-        position: "right",
-        style: { background: "#FCC603", color: "#1A1A1A" },
-        callback: function() {
-            window.location.href = "<%= request.getContextPath() %>/views/customer/dashboard.jsp";
-        }
     }).showToast();
     <% } %>
 </script>
