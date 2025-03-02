@@ -1,5 +1,52 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.CustomerDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Customer" %>
+<%
+    UUID customerUUID = (UUID) session.getAttribute("userId");
+    String customerId = customerUUID != null ? customerUUID.toString() : null;
+    String role = (String) session.getAttribute("role");
+    if (customerId == null || !"customer".equals(role)) {
+        response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+        return;
+    }
+
+    CustomerDAO customerDAO = new CustomerDAO();
+    Customer customer = null;
+    String errorMessage = null;
+    String successMessage = null;
+
+    // Fetch customer data on page load
+    try {
+        customer = customerDAO.getCustomerById(customerUUID);
+        if (customer == null) {
+            errorMessage = "Customer not found.";
+        }
+    } catch (Exception e) {
+        errorMessage = "Error fetching customer data: " + e.getMessage();
+    }
+
+    // Handle profile update
+    if ("POST".equalsIgnoreCase(request.getMethod())) {
+        String name = request.getParameter("name");
+        String email = request.getParameter("email");
+        String contactNo = request.getParameter("contactNo");
+        String address = request.getParameter("address");
+
+        try {
+            boolean updated = customerDAO.updateCustomer(customerUUID, name, contactNo, address, email);
+            if (updated) {
+                successMessage = "Profile updated successfully!";
+                customer = customerDAO.getCustomerById(customerUUID); // Refresh customer data
+            } else {
+                errorMessage = "Failed to update profile.";
+            }
+        } catch (Exception e) {
+            errorMessage = "Error updating profile: " + e.getMessage();
+        }
+    }
+%>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -62,13 +109,11 @@
                 </a>
             </div>
             <div class="flex items-center gap-4">
-                <!-- Profile Dropdown -->
                 <div class="relative">
                     <button onclick="toggleProfileDropdown()" class="flex items-center gap-2 focus:outline-none" aria-label="Toggle profile dropdown">
                         <i data-lucide="user" class="w-6 h-6 text-primary"></i>
-                        <span class="text-white">${userName}</span>
+                        <span class="text-white"><%= session.getAttribute("userName") != null ? session.getAttribute("userName") : "Guest" %></span>
                     </button>
-                    <!-- Dropdown Menu -->
                     <div id="profileDropdown" class="absolute right-0 mt-2 w-48 bg-dark/90 border border-white/10 rounded-lg shadow-lg hidden">
                         <div class="py-1">
                             <a href="${pageContext.request.contextPath}/views/customer/dashboard.jsp" class="block px-4 py-2 text-sm text-white hover:bg-white/10">Dashboard</a>
@@ -82,46 +127,33 @@
 </nav>
 
 <!-- Main Content -->
-<div class="container mx-auto px-4 py-16">
-    <%
-        UUID customerUUID = (UUID) session.getAttribute("userId");
-        String customerId = customerUUID != null ? customerUUID.toString() : null;
-        if (customerId != null) {
-    %>
-    <div class="container mx-auto px-4 py-16 min-h-screen flex items-center justify-center">
-        <div class="max-w-lg w-full form-container p-8 rounded-xl shadow-2xl">
-            <h2 class="text-2xl font-bold text-light text-center mb-4">Update Profile</h2>
-            <form id="profileForm">
-                <div class="mb-4">
-                    <label for="name" class="block text-sm font-medium text-light">Name</label>
-                    <input type="text" id="name" name="name" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
-                </div>
-                <div class="mb-4">
-                    <label for="email" class="block text-sm font-medium text-light">Email</label>
-                    <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled> <!-- Made editable -->
-                </div>
-                <div class="mb-4">
-                    <label for="contactNo" class="block text-sm font-medium text-light">Contact Number</label>
-                    <input type="text" id="contactNo" name="contactNo" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
-                </div>
-                <div class="mb-4">
-                    <label for="address" class="block text-sm font-medium text-light">Address</label>
-                    <textarea id="address" name="address" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled></textarea>
-                </div>
-                <button type="button" id="editButton" class="w-full bg-red-700 text-dark p-2 rounded-md hover:bg-red-500 transition">Edit</button>
-                <button type="submit" id="updateButton" class="w-full bg-primary text-dark p-2 rounded-md hover:bg-primary-700 transition hidden">Update Profile</button>
-            </form>
-        </div>
+<div class="container mx-auto px-4 py-16 min-h-screen flex items-center justify-center">
+    <div class="max-w-lg w-full form-container p-8 rounded-xl shadow-2xl">
+        <h2 class="text-2xl font-bold text-light text-center mb-4">Update Profile</h2>
+        <form id="profileForm" method="post" action="<%= request.getContextPath() %>/views/customer/profileUpdate.jsp">
+            <div class="mb-4">
+                <label for="name" class="block text-sm font-medium text-light">Name</label>
+                <input type="text" id="name" name="name" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable"
+                       value="<%= customer != null && customer.getName() != null ? customer.getName() : "" %>" disabled required>
+            </div>
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-medium text-light">Email</label>
+                <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable"
+                       value="<%= customer != null && customer.getEmail() != null ? customer.getEmail() : "" %>" disabled required>
+            </div>
+            <div class="mb-4">
+                <label for="contactNo" class="block text-sm font-medium text-light">Contact Number</label>
+                <input type="text" id="contactNo" name="contactNo" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable"
+                       value="<%= customer != null && customer.getContactNo() != null ? customer.getContactNo() : "" %>" disabled required>
+            </div>
+            <div class="mb-4">
+                <label for="address" class="block text-sm font-medium text-light">Address</label>
+                <textarea id="address" name="address" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled required><%= customer != null && customer.getAddress() != null ? customer.getAddress() : "" %></textarea>
+            </div>
+            <button type="button" id="editButton" class="w-full bg-red-700 text-dark p-2 rounded-md hover:bg-red-500 transition">Edit</button>
+            <button type="submit" id="updateButton" class="w-full bg-primary text-dark p-2 rounded-md hover:bg-primary-700 transition hidden">Update Profile</button>
+        </form>
     </div>
-    <%
-        } else {
-            Object userIdObj = session.getAttribute("userId");
-            if (userIdObj == null || !(userIdObj instanceof UUID)) {
-                response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
-                return;
-            }
-        }
-    %>
 </div>
 
 <!-- Footer -->
@@ -160,32 +192,25 @@
 </div>
 
 <script>
-    // Initialize Lucide Icons
     lucide.createIcons();
 
-    // Toggle Profile Dropdown
     function toggleProfileDropdown() {
         const dropdown = document.getElementById('profileDropdown');
         dropdown.classList.toggle('hidden');
     }
 
-    // Show logout confirmation modal
     function showLogoutModal() {
         document.getElementById('logoutModal').classList.remove('hidden');
     }
 
-    // Hide logout confirmation modal
     function cancelLogout() {
         document.getElementById('logoutModal').classList.add('hidden');
     }
 
-    // Confirm logout and perform the action
     function confirmLogout() {
-        fetch('${pageContext.request.contextPath}/logout', {
+        fetch('<%= request.getContextPath() %>/logout', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         })
             .then(response => response.json())
             .then(data => {
@@ -217,109 +242,48 @@
             });
     }
 
-    // Fetch customer data
-    function fetchCustomerData() {
-        fetch('${pageContext.request.contextPath}/customer?id=' + '<%= customerId %>', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status !== "error") {
-                    document.getElementById('name').value = data.name;
-                    document.getElementById('email').value = data.email;
-                    document.getElementById('contactNo').value = data.contactNo;
-                    document.getElementById('address').value = data.address;
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching customer data:', error);
-            });
-    }
-
-    // DOM Content Loaded Event Listener
     document.addEventListener("DOMContentLoaded", function () {
-        // Fetch data on page load
-        fetchCustomerData();
-
         // Edit button click handler
         document.getElementById('editButton').addEventListener('click', function () {
             let editables = document.querySelectorAll('.editable');
             editables.forEach(input => {
                 input.disabled = false;
-                input.classList.add('editing'); // Show borders
+                input.classList.add('editing');
             });
             document.getElementById('editButton').classList.add('hidden');
             document.getElementById('updateButton').classList.remove('hidden');
         });
 
-        // Form submission handler
-        document.getElementById('profileForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            let jsonObject = {
-                id: '<%= customerId %>',
-                name: document.getElementById('name').value,
-                contact_no: document.getElementById('contactNo').value,
-                address: document.getElementById('address').value,
-                email: document.getElementById('email').value // Added email to the request
-            };
-
-            fetch('${pageContext.request.contextPath}/customer', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(jsonObject)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        Toastify({
-                            text: "Profile updated successfully!",
-                            duration: 1500,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "green" },
-                            stopOnFocus: true
-                        }).showToast();
-
-                        // Reset form to view mode
-                        let editables = document.querySelectorAll('.editable');
-                        editables.forEach(input => {
-                            input.disabled = true;
-                            input.classList.remove('editing'); // Hide borders
-                        });
-                        document.getElementById('editButton').classList.remove('hidden');
-                        document.getElementById('updateButton').classList.add('hidden');
-                    } else {
-                        Toastify({
-                            text: "Update failed: " + data.message,
-                            duration: 3000,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "red" },
-                            stopOnFocus: true
-                        }).showToast();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating profile:', error);
-                    Toastify({
-                        text: "Something went wrong. Please try again.",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
+        <% if (errorMessage != null) { %>
+        Toastify({
+            text: "<%= errorMessage %>",
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: { background: "red" },
+            stopOnFocus: true
+        }).showToast();
+        <% } else if (successMessage != null) { %>
+        Toastify({
+            text: "<%= successMessage %>",
+            duration: 1500,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: { background: "green" },
+            stopOnFocus: true,
+            callback: function() {
+                let editables = document.querySelectorAll('.editable');
+                editables.forEach(input => {
+                    input.disabled = true;
+                    input.classList.remove('editing');
                 });
-        });
+                document.getElementById('editButton').classList.remove('hidden');
+                document.getElementById('updateButton').classList.add('hidden');
+            }
+        }).showToast();
+        <% } %>
     });
 </script>
 

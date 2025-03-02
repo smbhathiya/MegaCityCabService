@@ -1,5 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.BookingDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Booking" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Car" %>
+<%@ page import="java.util.Random" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,6 +44,75 @@
     </style>
 </head>
 <body class="bg-dark text-white min-h-screen flex flex-col">
+<%
+    UUID customerUUID = (UUID) session.getAttribute("userId");
+    String customerId = customerUUID != null ? customerUUID.toString() : null;
+    String role = (String) session.getAttribute("role");
+    if (customerId == null || !"customer".equals(role)) {
+        response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+        return;
+    }
+
+    BookingDAO bookingDAO = new BookingDAO();
+    String errorMessage = null;
+    String successMessage = null;
+    String bookingId = null;
+    Booking newBooking = null;
+
+    if ("POST".equalsIgnoreCase(request.getMethod())) {
+        String action = request.getParameter("action");
+        if ("submitBooking".equals(action)) {
+            String pickupLocation = request.getParameter("pickup_location");
+            String dropoffLocation = request.getParameter("dropoff_location");
+            String hireDate = request.getParameter("hire_date");
+            String hireTime = request.getParameter("hire_time");
+            int passengerCount = Integer.parseInt(request.getParameter("passenger_count"));
+
+            try {
+                Random random = new Random();
+                String bookingNumber = "BOOK-" + String.format("%06d", random.nextInt(1000000));
+                double distance = 10 + (random.nextDouble() * 50); // Simulated distance (10-60 km)
+                double totalFare = (distance * 50) + (passengerCount * 10); // Simulated fare
+
+                UUID newBookingId = UUID.randomUUID();
+                newBooking = new Booking(
+                        newBookingId, bookingNumber, UUID.fromString(customerId), null, null,
+                        pickupLocation, dropoffLocation, distance, "pending", totalFare, "pending", hireDate, hireTime
+                );
+                boolean added = bookingDAO.addBooking(newBooking);
+
+                if (added) {
+                    bookingId = newBookingId.toString();
+                    session.setAttribute("newBooking", newBooking);
+                    session.setAttribute("bookingId", bookingId);
+                } else {
+                    errorMessage = "Failed to create booking.";
+                }
+            } catch (Exception e) {
+                errorMessage = "Error creating booking: " + e.getMessage();
+            }
+        } else if ("confirmBooking".equals(action)) {
+            bookingId = request.getParameter("bookingId");
+            String status = request.getParameter("status");
+            try {
+                boolean updated = bookingDAO.updateBookingStatus(UUID.fromString(bookingId), status);
+                if (updated) {
+                    successMessage = "Booking " + status + " successfully!";
+                    session.removeAttribute("newBooking");
+                    session.removeAttribute("bookingId");
+                } else {
+                    errorMessage = "Failed to update booking status.";
+                }
+            } catch (Exception e) {
+                errorMessage = "Error updating booking status: " + e.getMessage();
+            }
+        }
+    }
+
+    if (bookingId != null && session.getAttribute("newBooking") != null) {
+        newBooking = (Booking) session.getAttribute("newBooking");
+    }
+%>
 <!-- Navbar -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/90 backdrop-blur-md z-50">
     <div class="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -70,43 +143,33 @@
 
 <!-- Main Content -->
 <main class="flex-1 flex items-center justify-center px-6 py-28">
-    <%
-        Object userIdObj = session.getAttribute("userId");
-        String customerId = null;
-        if (userIdObj != null && userIdObj instanceof UUID) {
-            customerId = ((UUID) userIdObj).toString();
-        }
-        if (customerId == null) {
-            response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
-            return;
-        }
-    %>
     <div class="form-container p-8 rounded-xl shadow-2xl w-full max-w-2xl mx-auto animate-slide-up">
         <h2 class="text-3xl font-bold text-white mb-8 text-center">Book a Ride</h2>
-        <form id="bookingForm" onsubmit="submitBooking(event)">
+        <form id="bookingForm" method="post" action="<%= request.getContextPath() %>/views/customer/addBooking.jsp">
+            <input type="hidden" name="action" value="submitBooking">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <div class="mb-6">
                         <label for="pickup_location" class="block text-sm font-medium text-gray-300 mb-2">Pickup Location</label>
-                        <input type="text" id="pickup_location" name="pickup_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary">
+                        <input type="text" id="pickup_location" name="pickup_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary" value="<%= request.getParameter("pickup_location") != null ? request.getParameter("pickup_location") : "" %>">
                     </div>
                     <div class="mb-6">
                         <label for="hire_date" class="block text-sm font-medium text-gray-300 mb-2">Hire Date</label>
-                        <input type="date" id="hire_date" name="hire_date" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary">
+                        <input type="date" id="hire_date" name="hire_date" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary" value="<%= request.getParameter("hire_date") != null ? request.getParameter("hire_date") : "" %>">
                     </div>
                     <div class="mb-6">
                         <label for="passenger_count" class="block text-sm font-medium text-gray-300 mb-2">Passenger Count</label>
-                        <input type="number" id="passenger_count" name="passenger_count" min="1" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary">
+                        <input type="number" id="passenger_count" name="passenger_count" min="1" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary" value="<%= request.getParameter("passenger_count") != null ? request.getParameter("passenger_count") : "" %>">
                     </div>
                 </div>
                 <div>
                     <div class="mb-6">
                         <label for="dropoff_location" class="block text-sm font-medium text-gray-300 mb-2">Drop-off Location</label>
-                        <input type="text" id="dropoff_location" name="dropoff_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary">
+                        <input type="text" id="dropoff_location" name="dropoff_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary" value="<%= request.getParameter("dropoff_location") != null ? request.getParameter("dropoff_location") : "" %>">
                     </div>
                     <div class="mb-6">
                         <label for="hire_time" class="block text-sm font-medium text-gray-300 mb-2">Hire Time</label>
-                        <input type="time" id="hire_time" name="hire_time" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary">
+                        <input type="time" id="hire_time" name="hire_time" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary" value="<%= request.getParameter("hire_time") != null ? request.getParameter("hire_time") : "" %>">
                     </div>
                 </div>
             </div>
@@ -144,23 +207,27 @@
 </footer>
 
 <!-- Booking Confirmation Modal -->
-<div id="bookingModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+<div id="bookingModal" class="<% if (newBooking != null) { %>block<% } else { %>hidden<% } %> fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     <div class="bg-accent p-6 rounded-xl shadow-2xl max-w-md w-full">
         <h3 class="text-xl font-bold text-white mb-4">Booking Details</h3>
         <div class="text-gray-300 mb-6">
-            <p><strong>Booking Number:</strong> <span id="bookingNumber"></span></p>
-            <p><strong>Car:</strong> <span id="carDetails"></span></p>
-            <p><strong>Pickup:</strong> <span id="pickupLocation"></span></p>
-            <p><strong>Drop-off:</strong> <span id="dropoffLocation"></span></p>
-            <p><strong>Date:</strong> <span id="hireDate"></span></p>
-            <p><strong>Time:</strong> <span id="hireTime"></span></p>
-            <p><strong>Distance:</strong> <span id="distance"></span></p>
-            <p><strong>Total Fare:</strong> <span id="totalFare"></span></p>
+            <p><strong>Booking Number:</strong> <span id="bookingNumber"><%= newBooking != null ? newBooking.getBookingNumber() : "" %></span></p>
+            <p><strong>Car:</strong> <span id="carDetails"><%= newBooking != null && newBooking.getCarDetails() != null ? newBooking.getCarDetails().getBrand() + " " + newBooking.getCarDetails().getModel() + " (" + newBooking.getCarDetails().getPlateNumber() + ")" : "N/A" %></span></p>
+            <p><strong>Pickup:</strong> <span id="pickupLocation"><%= newBooking != null ? newBooking.getPickupLocation() : "" %></span></p>
+            <p><strong>Drop-off:</strong> <span id="dropoffLocation"><%= newBooking != null ? newBooking.getDropoffLocation() : "" %></span></p>
+            <p><strong>Date:</strong> <span id="hireDate"><%= newBooking != null ? newBooking.getHireDate() : "" %></span></p>
+            <p><strong>Time:</strong> <span id="hireTime"><%= newBooking != null ? newBooking.getHireTime() : "" %></span></p>
+            <p><strong>Distance:</strong> <span id="distance"><%= newBooking != null && newBooking.getDistance() > 0 ? String.format("%.2f km", newBooking.getDistance()) : "N/A" %></span></p>
+            <p><strong>Total Fare:</strong> <span id="totalFare"><%= newBooking != null && newBooking.getTotalFare() > 0 ? "Rs. " + String.format("%.2f", newBooking.getTotalFare()) : "N/A" %></span></p>
         </div>
-        <div class="flex gap-4 justify-end">
-            <button onclick="confirmBooking('confirmed')" class="bg-primary text-dark px-6 py-2 rounded-full btn-primary font-semibold">Confirm</button>
-            <button onclick="confirmBooking('cancelled')" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 font-semibold">Cancel</button>
-        </div>
+        <form method="post" action="<%= request.getContextPath() %>/views/customer/addBooking.jsp">
+            <input type="hidden" name="action" value="confirmBooking">
+            <input type="hidden" name="bookingId" value="<%= bookingId != null ? bookingId : "" %>">
+            <div class="flex gap-4 justify-end">
+                <button type="submit" name="status" value="confirmed" class="bg-primary text-dark px-6 py-2 rounded-full btn-primary font-semibold">Confirm</button>
+                <button type="submit" name="status" value="cancelled" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 font-semibold">Cancel</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -180,8 +247,7 @@
     lucide.createIcons();
 
     function toggleProfileDropdown() {
-        const dropdown = document.getElementById('profileDropdown');
-        dropdown.classList.toggle('hidden');
+        document.getElementById('profileDropdown').classList.toggle('hidden');
     }
 
     function showLogoutModal() {
@@ -225,122 +291,28 @@
             });
     }
 
-    function submitBooking(event) {
-        event.preventDefault();
-        const customerId = '<%= customerId %>';
-        const formData = {
-            customer_id: customerId,
-            pickup_location: document.getElementById('pickup_location').value,
-            dropoff_location: document.getElementById('dropoff_location').value,
-            hire_date: document.getElementById('hire_date').value,
-            hire_time: document.getElementById('hire_time').value,
-            passenger_count: parseInt(document.getElementById('passenger_count').value, 10)
-        };
-
-        fetch('<%= request.getContextPath() %>/booking', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.statusText);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Booking Response:', data);
-                if (data.status === 'success') {
-                    document.getElementById('bookingNumber').innerText = data.bookingNumber;
-                    document.getElementById('carDetails').innerText = data.carDetails.plateNumber;
-                    document.getElementById('pickupLocation').innerText = data.pickupLocation;
-                    document.getElementById('dropoffLocation').innerText = data.dropoffLocation;
-                    document.getElementById('hireDate').innerText = data.hireDate;
-                    document.getElementById('hireTime').innerText = data.hireTime;
-                    document.getElementById('distance').innerText = data.distance.toFixed(2) + ' km';
-                    document.getElementById('totalFare').innerText = 'Rs. ' + data.total_fare.toFixed(2);
-
-                    document.getElementById('bookingModal').dataset.bookingId = data.bookingId;
-                    document.getElementById('bookingModal').classList.remove('hidden');
-                } else {
-                    Toastify({
-                        text: "Booking failed: " + data.message,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" }
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Toastify({
-                    text: "An error occurred while booking: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" }
-                }).showToast();
-            });
-    }
-
-    function confirmBooking(status) {
-        const bookingId = document.getElementById('bookingModal').dataset.bookingId;
-        fetch('<%= request.getContextPath() %>/booking/confirm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId: bookingId, status: status })
-        })
-            .then(response => {
-                console.log('Response Status:', response.status);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.statusText);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Parsed Confirm Response:', data);
-                if (data.status === 'success') {
-                    Toastify({
-                        text: `Booking ${status} successfully!`,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "#FCC603", color: "#1A1A1A" }
-                    }).showToast();
-                    setTimeout(() => {
-                        window.location.href = "<%= request.getContextPath() %>/views/customer/dashboard.jsp";
-                    }, 2000);
-                } else {
-                    Toastify({
-                        text: `${status == 'confirmed' ? 'Confirmation' : 'Cancellation'} failed: ${data.message}`,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" }
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Toastify({
-                    text: `An error occurred while ${status == 'confirmed' ? 'confirming' : 'cancelling'}: ${error.message}`,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" }
-                }).showToast();
-            });
-    }
-
-    function closeBookingModal() {
-        document.getElementById('bookingModal').classList.add('hidden');
-    }
+    <% if (errorMessage != null) { %>
+    Toastify({
+        text: "<%= errorMessage %>",
+        duration: 3000,
+        close: true,
+        gravity: "top",
+        position: "right",
+        style: { background: "red" }
+    }).showToast();
+    <% } else if (successMessage != null) { %>
+    Toastify({
+        text: "<%= successMessage %>",
+        duration: 3000,
+        close: true,
+        gravity: "top",
+        position: "right",
+        style: { background: "#FCC603", color: "#1A1A1A" },
+        callback: function() {
+            window.location.href = "<%= request.getContextPath() %>/views/customer/dashboard.jsp";
+        }
+    }).showToast();
+    <% } %>
 </script>
 </body>
 </html>

@@ -1,5 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.PaymentDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Payment" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.text.DecimalFormat" %>
+<%@ page import="com.google.gson.Gson" %>
+<%@ page import="java.util.ArrayList" %>
 <%
     UUID customerUUID = (UUID) session.getAttribute("userId");
     String customerId = customerUUID != null ? customerUUID.toString() : null;
@@ -8,6 +14,24 @@
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
         return;
     }
+
+    PaymentDAO paymentDAO = new PaymentDAO();
+    DecimalFormat df = new DecimalFormat("#.##");
+    Gson gson = new Gson();
+
+    List<Payment> pendingPayments = null;
+    List<Payment> paymentHistory = null;
+    String errorMessage = null;
+
+    try {
+        pendingPayments = paymentDAO.getPendingPaymentsByCustomerId(customerId);
+        paymentHistory = paymentDAO.getPaymentHistoryByCustomerId(customerId);
+    } catch (Exception e) {
+        errorMessage = "Error fetching payment data: " + e.getMessage();
+    }
+
+    String pendingPaymentsJson = gson.toJson(pendingPayments != null ? pendingPayments : new ArrayList<>());
+    String paymentHistoryJson = gson.toJson(paymentHistory != null ? paymentHistory : new ArrayList<>());
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -17,7 +41,7 @@
     <title>Customer Payments - Mega City Cabs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> <!-- Added jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -115,7 +139,7 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Transaction ID</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Payment Date</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th> <!-- Added Actions column -->
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                     </tr>
                     </thead>
                     <tbody id="paymentHistoryTableBody"></tbody>
@@ -239,7 +263,7 @@
 <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script>
     lucide.createIcons();
-    const { jsPDF } = window.jspdf; // Access jsPDF from the library
+    const { jsPDF } = window.jspdf;
 
     function toggleProfileDropdown() {
         document.getElementById('profileDropdown').classList.toggle('hidden');
@@ -274,71 +298,46 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        fetchPayments();
-    });
+        const pendingPayments = <%= pendingPaymentsJson %>;
+        const paymentHistory = <%= paymentHistoryJson %>;
 
-    function fetchPayments() {
         const pendingTbody = document.getElementById('pendingPaymentsTableBody');
         const historyTbody = document.getElementById('paymentHistoryTableBody');
-        pendingTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Loading...</td></tr>';
-        historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">Loading...</td></tr>';
 
-        // Fetch pending payments
-        fetch('<%= request.getContextPath() %>/customer/payments/pending', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Pending payments:', data);
-                if (data.status === 'success') {
-                    pendingTbody.innerHTML = '';
-                    data.data.forEach(payment => {
-                        const row = createPendingPaymentRow(payment);
-                        pendingTbody.appendChild(row);
-                    });
-                    if (data.data.length === 0) {
-                        pendingTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">No pending payments</td></tr>';
-                    }
-                } else {
-                    throw new Error(data.data);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching pending payments:', error);
-                pendingTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">Error loading data</td></tr>';
-                Toastify({ text: "Error fetching pending payments: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+        // Populate Pending Payments
+        pendingTbody.innerHTML = '';
+        if (pendingPayments.length > 0) {
+            pendingPayments.forEach(payment => {
+                const row = createPendingPaymentRow(payment);
+                pendingTbody.appendChild(row);
             });
+        } else {
+            pendingTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">No pending payments</td></tr>';
+        }
 
-        // Fetch payment history
-        fetch('<%= request.getContextPath() %>/customer/payments/history', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Payment history:', data);
-                if (data.status === 'success') {
-                    historyTbody.innerHTML = '';
-                    data.data.forEach(payment => {
-                        const row = createPaymentHistoryRow(payment);
-                        historyTbody.appendChild(row);
-                    });
-                    if (data.data.length === 0) {
-                        historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">No payment history</td></tr>';
-                    }
-                } else {
-                    throw new Error(data.data);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching payment history:', error);
-                historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">Error loading data</td></tr>';
-                Toastify({ text: "Error fetching payment history: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+        // Populate Payment History
+        historyTbody.innerHTML = '';
+        if (paymentHistory.length > 0) {
+            paymentHistory.forEach(payment => {
+                const row = createPaymentHistoryRow(payment);
+                historyTbody.appendChild(row);
             });
-    }
+        } else {
+            historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">No payment history</td></tr>';
+        }
+
+        <% if (errorMessage != null) { %>
+        Toastify({
+            text: "<%= errorMessage %>",
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: { background: "red" },
+            stopOnFocus: true
+        }).showToast();
+        <% } %>
+    });
 
     function createPendingPaymentRow(payment) {
         const row = document.createElement('tr');
@@ -348,7 +347,7 @@
         row.appendChild(createCell(payment.pickupLocation));
         row.appendChild(createCell(payment.dropoffLocation));
         row.appendChild(createCell(payment.hireDate));
-        row.appendChild(createCell('Rs.' + payment.amount.toFixed(2)));
+        row.appendChild(createCell('Rs.' + Number(payment.amount).toFixed(2)));
 
         const actionCell = document.createElement('td');
         actionCell.className = "px-6 py-4";
@@ -367,7 +366,7 @@
         row.className = 'border-b border-white/10';
 
         row.appendChild(createCell(payment.bookingNumber));
-        row.appendChild(createCell('Rs.' + payment.amount.toFixed(2)));
+        row.appendChild(createCell('Rs.' + Number(payment.amount).toFixed(2)));
         row.appendChild(createCell(payment.paymentMethod));
         row.appendChild(createCell(payment.transactionId));
         row.appendChild(createCell(payment.status));
@@ -395,50 +394,29 @@
     function printBill(payment) {
         const doc = new jsPDF();
 
-        // Add title
         doc.setFontSize(20);
         doc.text("Mega City Cabs - Payment Receipt", 20, 20);
 
-        // Add payment details
         doc.setFontSize(12);
-        doc.text("Booking Number: " +payment.bookingNumber, 20, 40);
-        doc.text("Amount: Rs. "+payment.amount.toFixed(2), 20, 50);
-        doc.text("Payment Method: "+payment.paymentMethod, 20, 60);
-        doc.text("Transaction ID: "+payment.transactionId, 20, 70);
-        doc.text("Status: "+payment.status, 20, 80);
-        doc.text("Payment Date: " + new Date(payment.paymentDate).toLocaleString(), 20, 90);
+        doc.text("Booking Number: " + (payment.bookingNumber || 'N/A'), 20, 40);
+        doc.text("Amount: Rs. " + (payment.amount ? Number(payment.amount).toFixed(2) : 'N/A'), 20, 50);
+        doc.text("Payment Method: " + (payment.paymentMethod || 'N/A'), 20, 60);
+        doc.text("Transaction ID: " + (payment.transactionId || 'N/A'), 20, 70);
+        doc.text("Status: " + (payment.status || 'N/A'), 20, 80);
+        doc.text("Payment Date: " + (payment.paymentDate ? new Date(payment.paymentDate).toLocaleString() : 'N/A'), 20, 90);
 
-
-        // Add footer
         doc.setFontSize(10);
         doc.text("Thank you for choosing Mega City Cabs!", 20, 110);
 
-        // Save the PDF
-        doc.save("Receipt_"+payment.bookingNumber+".pdf");
-    }
-
-    function viewPaymentDetails(payment) {
-        document.getElementById('detailBookingNumber').textContent = payment.bookingNumber;
-        document.getElementById('detailAmount').textContent = 'Rs.' + payment.amount.toFixed(2);
-        document.getElementById('detailPaymentMethod').textContent = payment.paymentMethod;
-        document.getElementById('detailTransactionId').textContent = payment.transactionId;
-        document.getElementById('detailStatus').textContent = payment.status;
-        document.getElementById('detailPaymentDate').textContent = new Date(payment.paymentDate).toLocaleString();
-        document.getElementById('paymentDetailsModal').classList.remove('hidden');
-    }
-
-    function closePaymentDetailsModal(event) {
-        if (!event || event.target === document.getElementById('paymentDetailsModal')) {
-            document.getElementById('paymentDetailsModal').classList.add('hidden');
-        }
+        doc.save("Receipt_" + (payment.bookingNumber || 'Unknown') + ".pdf");
     }
 
     let currentPayment = null;
 
     function showSelectPaymentMethodModal(payment) {
         currentPayment = payment;
-        document.getElementById('selectBookingNumber').textContent = payment.bookingNumber;
-        document.getElementById('selectAmount').textContent = 'Rs.' + payment.amount.toFixed(2);
+        document.getElementById('selectBookingNumber').textContent = payment.bookingNumber || 'N/A';
+        document.getElementById('selectAmount').textContent = 'Rs.' + (payment.amount ? Number(payment.amount).toFixed(2) : 'N/A');
         document.getElementById('selectPaymentMethodModal').classList.remove('hidden');
     }
 
@@ -450,8 +428,8 @@
 
     function selectCashPayment() {
         closeSelectPaymentMethodModal();
-        document.getElementById('cashBookingNumber').textContent = currentPayment.bookingNumber;
-        document.getElementById('cashAmount').textContent = 'Rs.' + currentPayment.amount.toFixed(2);
+        document.getElementById('cashBookingNumber').textContent = currentPayment.bookingNumber || 'N/A';
+        document.getElementById('cashAmount').textContent = 'Rs.' + (currentPayment.amount ? Number(currentPayment.amount).toFixed(2) : 'N/A');
         document.getElementById('confirmCashPaymentModal').classList.remove('hidden');
     }
 
@@ -478,7 +456,7 @@
                 if (data.status === 'success') {
                     Toastify({ text: "Cash payment processed successfully!", duration: 3000, close: true, gravity: "top", position: "right", style: { background: "green" } }).showToast();
                     closeConfirmCashPaymentModal();
-                    fetchPayments();
+                    location.reload(); // Refresh to update tables
                 } else {
                     throw new Error(data.data || "Unknown error");
                 }
@@ -491,8 +469,8 @@
 
     function selectCardPayment() {
         closeSelectPaymentMethodModal();
-        document.getElementById('cardBookingNumber').textContent = currentPayment.bookingNumber;
-        document.getElementById('cardAmount').textContent = 'Rs.' + currentPayment.amount.toFixed(2);
+        document.getElementById('cardBookingNumber').textContent = currentPayment.bookingNumber || 'N/A';
+        document.getElementById('cardAmount').textContent = 'Rs.' + (currentPayment.amount ? Number(currentPayment.amount).toFixed(2) : 'N/A');
         document.getElementById('cardPaymentModal').classList.remove('hidden');
     }
 
@@ -526,7 +504,7 @@
                     if (data.status === 'success') {
                         Toastify({ text: "Card payment processed successfully!", duration: 3000, close: true, gravity: "top", position: "right", style: { background: "green" } }).showToast();
                         closeCardPaymentModal();
-                        fetchPayments();
+                        location.reload(); // Refresh to update tables
                     } else {
                         throw new Error(data.data || "Unknown error");
                     }

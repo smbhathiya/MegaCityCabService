@@ -48,14 +48,14 @@ public class CustomerPaymentServlet extends HttpServlet {
         try {
             if ("/pending".equals(pathInfo)) {
                 logger.info("Fetching pending payments for customer: " + customerId);
-                synchronized (DBUtil.class) { // Synchronize to avoid concurrent access to singleton connection
+                synchronized (DBUtil.class) {
                     List<Payment> pendingPayments = paymentDAO.getPendingPaymentsByCustomerId(customerId.toString());
                     logger.info("Pending payments retrieved: " + pendingPayments.size() + " records");
                     response.getWriter().write(gson.toJson(new ResponseWrapper("success", pendingPayments)));
                 }
             } else if ("/history".equals(pathInfo)) {
                 logger.info("Fetching payment history for customer: " + customerId);
-                synchronized (DBUtil.class) { // Synchronize to avoid concurrent access to singleton connection
+                synchronized (DBUtil.class) {
                     List<Payment> paymentHistory = paymentDAO.getPaymentHistoryByCustomerId(customerId.toString());
                     logger.info("Payment history retrieved: " + paymentHistory.size() + " records");
                     response.getWriter().write(gson.toJson(new ResponseWrapper("success", paymentHistory)));

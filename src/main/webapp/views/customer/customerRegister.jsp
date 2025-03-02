@@ -1,4 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.CustomerDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.util.PasswordUtil" %>
+<%@ page import="java.sql.SQLException" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,7 +67,7 @@
             top: 65%;
             transform: translateY(-50%);
             display: none;
-            color: #22c55e; /* Green for match */
+            color: #22c55e;
         }
         .password-match.match .check-icon {
             display: inline-block;
@@ -75,8 +78,55 @@
     </style>
 </head>
 <body class="bg-dark text-white min-h-screen flex flex-col">
+<%
+    String errorMessage = null;
+    String successMessage = null;
 
-<!-- Navbar (Aligned with Other Screens) -->
+    if ("POST".equalsIgnoreCase(request.getMethod())) {
+        String name = request.getParameter("name");
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+        String confirmPassword = request.getParameter("confirm_password");
+        String phoneNumber = request.getParameter("phone_number");
+        String address = request.getParameter("address");
+
+        if (password != null && !password.equals(confirmPassword)) {
+            errorMessage = "Passwords do not match!";
+        } else if (name != null && email != null && phoneNumber != null && address != null && password != null) {
+            try {
+                CustomerDAO customerDAO = new CustomerDAO();
+                String passwordHash = PasswordUtil.hashPassword(password);
+                boolean isAdded = customerDAO.addCustomer(name, email, true, phoneNumber, address, passwordHash);
+
+                if (isAdded) {
+                    successMessage = "Registration successful!";
+                    session.setAttribute("toastMessage", successMessage);
+                    session.setAttribute("toastType", "success");
+                } else {
+                    errorMessage = "Failed to register customer.";
+                }
+            } catch (SQLException e) {
+                String sqlMessage = e.getMessage();
+                if (sqlMessage.contains("Duplicate entry")) {
+                    if (sqlMessage.contains("customers.contact_no")) {
+                        errorMessage = "This phone number is already registered.";
+                    } else if (sqlMessage.contains("users.email")) {
+                        errorMessage = "This email is already registered.";
+                    } else {
+                        errorMessage = "Duplicate entry found.";
+                    }
+                } else {
+                    errorMessage = "An unexpected error occurred. Please try again.";
+                }
+                e.printStackTrace();
+            }
+        } else {
+            errorMessage = "All fields are required!";
+        }
+    }
+%>
+
+<!-- Navbar -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/95 backdrop-blur-lg z-50 shadow-md">
     <div class="container mx-auto px-6 py-4">
         <div class="flex items-center justify-between">
@@ -103,16 +153,18 @@
 <div class="flex-1 flex items-center justify-center px-6 py-28">
     <div class="register-container p-8 rounded-xl shadow-2xl w-full max-w-2xl animate-slide-up">
         <h2 class="text-3xl font-bold text-white text-center mb-8">Registration</h2>
-        <form id="registrationForm" onsubmit="handleRegistration(event)">
+        <form id="registrationForm" method="post" action="<%= request.getContextPath() %>/views/customer/customerRegister.jsp">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
                     <input type="text" id="name" name="name" required
+                           value="<%= request.getParameter("name") != null ? request.getParameter("name") : "" %>"
                            class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary">
                 </div>
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
                     <input type="email" id="email" name="email" required
+                           value="<%= request.getParameter("email") != null ? request.getParameter("email") : "" %>"
                            class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary">
                 </div>
                 <div>
@@ -129,11 +181,13 @@
                 <div>
                     <label for="phone_number" class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
                     <input type="text" id="phone_number" name="phone_number" required
+                           value="<%= request.getParameter("phone_number") != null ? request.getParameter("phone_number") : "" %>"
                            class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary">
                 </div>
                 <div class="md:col-span-2">
                     <label for="address" class="block text-sm font-medium text-gray-300 mb-2">Address</label>
                     <input type="text" id="address" name="address" required
+                           value="<%= request.getParameter("address") != null ? request.getParameter("address") : "" %>"
                            class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary">
                 </div>
             </div>
@@ -149,7 +203,7 @@
     </div>
 </div>
 
-<!-- Footer (Unchanged) -->
+<!-- Footer -->
 <footer class="bg-dark/50 py-12 border-t border-white/10">
     <div class="container mx-auto px-4">
         <div class="flex flex-col md:flex-row justify-between items-center">
@@ -178,78 +232,6 @@
 <script>
     lucide.createIcons();
 
-    function handleRegistration(event) {
-        event.preventDefault();
-
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirm_password').value;
-
-        if (password !== confirmPassword) {
-            Toastify({
-                text: "Passwords do not match!",
-                duration: 3000,
-                close: true,
-                gravity: "top",
-                position: "right",
-                style: { background: "red" },
-                stopOnFocus: true
-            }).showToast();
-            return;
-        }
-
-        const formData = {
-            name: document.getElementById('name').value,
-            email: document.getElementById('email').value,
-            is_enabled: true,
-            contact_no: document.getElementById('phone_number').value,
-            address: document.getElementById('address').value,
-            password: password
-        };
-
-        fetch('${pageContext.request.contextPath}/customer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "success") {
-                    Toastify({
-                        text: "Registration successful",
-                        duration: 1500,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "green" },
-                        stopOnFocus: true
-                    }).showToast();
-                    setTimeout(() => window.location.href = "../auth/login.jsp", 1500);
-                } else {
-                    Toastify({
-                        text: data.message || "Registration failed!",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Toastify({
-                    text: "An error occurred. Please try again.",
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
-    }
-
     document.getElementById('confirm_password').addEventListener('input', function () {
         const password = document.getElementById('password').value;
         const confirmPassword = this.value;
@@ -270,23 +252,32 @@
     window.onload = function () {
         lucide.createIcons();
 
-        var toastMessage = '<%= session.getAttribute("toastMessage") != null ? session.getAttribute("toastMessage") : "" %>';
-        var toastType = '<%= session.getAttribute("toastType") != null ? session.getAttribute("toastType") : "" %>';
+        var errorMessage = '<%= errorMessage != null ? errorMessage : "" %>';
+        var successMessage = '<%= successMessage != null ? successMessage : "" %>';
 
-        if (toastMessage.trim() !== "") {
+        if (errorMessage.trim() !== "") {
             Toastify({
-                text: toastMessage,
+                text: errorMessage,
                 duration: 3000,
                 close: true,
                 gravity: "top",
                 position: "right",
-                style: { background: toastType.trim().toLowerCase() === "success" ? "green" : "red" },
+                style: { background: "red" },
                 stopOnFocus: true
             }).showToast();
-
-            if (toastType.trim().toLowerCase() === "success") {
-                setTimeout(() => window.location.href = "../auth/login.jsp", 3500);
-            }
+        } else if (successMessage.trim() !== "") {
+            Toastify({
+                text: successMessage,
+                duration: 1500,
+                close: true,
+                gravity: "top",
+                position: "right",
+                style: { background: "green" },
+                stopOnFocus: true,
+                callback: function() {
+                    window.location.href = "../auth/login.jsp";
+                }
+            }).showToast();
         }
 
         <% session.removeAttribute("toastMessage"); %>

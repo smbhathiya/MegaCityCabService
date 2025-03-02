@@ -1,5 +1,10 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.BookingDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Booking" %>
+<%@ page import="java.util.List" %>
+<%@ page import="com.google.gson.Gson" %>
+<%@ page import="java.util.ArrayList" %>
 <%
     UUID customerUUID = (UUID) session.getAttribute("userId");
     String customerId = customerUUID != null ? customerUUID.toString() : null;
@@ -8,6 +13,19 @@
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
         return;
     }
+
+    BookingDAO bookingDAO = new BookingDAO();
+    List<Booking> bookings = null;
+    String errorMessage = null;
+
+    try {
+        bookings = bookingDAO.getBookingsByCustomerId(customerId);
+    } catch (Exception e) {
+        errorMessage = "Error fetching booking history: " + e.getMessage();
+    }
+
+    Gson gson = new Gson();
+    String bookingsJson = gson.toJson(bookings != null ? bookings : new ArrayList<>());
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -92,7 +110,6 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Pickup</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Drop-off</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Date</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                     </tr>
                     </thead>
                     <tbody id="confirmedBookingsTableBody"></tbody>
@@ -196,58 +213,49 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        fetchBookingHistory();
-    });
+        const bookings = <%= bookingsJson %>;
 
-    function fetchBookingHistory() {
         const confirmedTbody = document.getElementById('confirmedBookingsTableBody');
         const completedCancelledTbody = document.getElementById('completedCancelledBookingsTableBody');
-        confirmedTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Loading...</td></tr>';
-        completedCancelledTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Loading...</td></tr>';
 
-        fetch('<%= request.getContextPath() %>/customer/booking-history', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return response.json();
-            })
-            .then(bookings => {
-                console.log('Fetched booking history:', bookings);
-                confirmedTbody.innerHTML = '';
-                completedCancelledTbody.innerHTML = '';
+        // Filter bookings
+        const confirmedBookings = bookings.filter(booking => booking.bookingStatus === 'confirmed');
+        const otherBookings = bookings.filter(booking => booking.bookingStatus === 'completed' || booking.bookingStatus === 'cancelled');
 
-                // Filter bookings
-                const confirmedBookings = bookings.filter(booking => booking.bookingStatus === 'confirmed');
-                const otherBookings = bookings.filter(booking => booking.bookingStatus === 'completed' || booking.bookingStatus === 'cancelled');
-
-                // Populate Confirmed Bookings
-                confirmedBookings.forEach(booking => {
-                    const row = createBookingRow(booking, false);
-                    confirmedTbody.appendChild(row);
-                });
-                if (confirmedBookings.length === 0) {
-                    confirmedTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">No confirmed bookings</td></tr>';
-                }
-
-                // Populate Completed/Cancelled Bookings
-                otherBookings.forEach(booking => {
-                    const row = createBookingRow(booking, true);
-                    completedCancelledTbody.appendChild(row);
-                });
-                if (otherBookings.length === 0) {
-                    completedCancelledTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">No completed or cancelled bookings</td></tr>';
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching booking history:', error);
-                confirmedTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Error loading data</td></tr>';
-                completedCancelledTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Error loading data</td></tr>';
-                Toastify({ text: "Error fetching booking history: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
+        // Populate Confirmed Bookings
+        confirmedTbody.innerHTML = '';
+        if (confirmedBookings.length > 0) {
+            confirmedBookings.forEach(booking => {
+                const row = createBookingRow(booking, false);
+                confirmedTbody.appendChild(row);
             });
-    }
+        } else {
+            confirmedTbody.innerHTML = '<tr><td colspan="4" class="text-center text-white py-4">No confirmed bookings</td></tr>';
+        }
+
+        // Populate Completed/Cancelled Bookings
+        completedCancelledTbody.innerHTML = '';
+        if (otherBookings.length > 0) {
+            otherBookings.forEach(booking => {
+                const row = createBookingRow(booking, true);
+                completedCancelledTbody.appendChild(row);
+            });
+        } else {
+            completedCancelledTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">No completed or cancelled bookings</td></tr>';
+        }
+
+        <% if (errorMessage != null) { %>
+        Toastify({
+            text: "<%= errorMessage %>",
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: { background: "red" },
+            stopOnFocus: true
+        }).showToast();
+        <% } %>
+    });
 
     function createBookingRow(booking, includeStatus) {
         const row = document.createElement('tr');
@@ -260,15 +268,6 @@
 
         if (includeStatus) {
             row.appendChild(createCell(booking.bookingStatus));
-        } else {
-            const actionCell = document.createElement('td');
-            actionCell.className = "px-6 py-4";
-            const viewBtn = document.createElement('button');
-            viewBtn.className = "text-primary hover:text-primary-700";
-            viewBtn.innerHTML = '<i data-lucide="eye" class="w-5 h-5"></i>';
-            viewBtn.onclick = () => viewBookingDetails(booking);
-            actionCell.appendChild(viewBtn);
-            row.appendChild(actionCell);
         }
 
         return row;
@@ -282,15 +281,15 @@
     }
 
     function viewBookingDetails(booking) {
-        document.getElementById('detailBookingNumber').textContent = booking.bookingNumber;
+        document.getElementById('detailBookingNumber').textContent = booking.bookingNumber || 'N/A';
         document.getElementById('detailCarDetails').textContent = booking.carDetails ? `${booking.carDetails.brand} ${booking.carDetails.model} (${booking.carDetails.plateNumber})` : 'N/A';
-        document.getElementById('detailPickupLocation').textContent = booking.pickupLocation;
-        document.getElementById('detailDropoffLocation').textContent = booking.dropoffLocation;
-        document.getElementById('detailHireDate').textContent = booking.hireDate;
-        document.getElementById('detailHireTime').textContent = booking.hireTime;
+        document.getElementById('detailPickupLocation').textContent = booking.pickupLocation || 'N/A';
+        document.getElementById('detailDropoffLocation').textContent = booking.dropoffLocation || 'N/A';
+        document.getElementById('detailHireDate').textContent = booking.hireDate || 'N/A';
+        document.getElementById('detailHireTime').textContent = booking.hireTime || 'N/A';
         document.getElementById('detailDistance').textContent = booking.distance ? `${booking.distance.toFixed(2)} km` : 'N/A';
         document.getElementById('detailTotalFare').textContent = booking.totalFare ? `Rs. ${booking.totalFare.toFixed(2)}` : 'N/A';
-        document.getElementById('detailBookingStatus').textContent = booking.bookingStatus;
+        document.getElementById('detailBookingStatus').textContent = booking.bookingStatus || 'N/A';
         document.getElementById('bookingDetailsModal').classList.remove('hidden');
     }
 
@@ -300,18 +299,6 @@
         }
     }
 </script>
-
-<!-- Logout Confirmation Modal -->
-<div id="logoutModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-accent p-6 rounded-xl shadow-2xl">
-        <h3 class="text-xl font-bold text-white mb-4">Confirm Logout</h3>
-        <p class="text-gray-300 mb-6">Are you sure you want to logout?</p>
-        <div class="flex gap-4 justify-end">
-            <button onclick="confirmLogout()" class="bg-primary text-dark px-6 py-2 rounded-full btn-primary font-semibold">Yes</button>
-            <button onclick="cancelLogout()" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 font-semibold">No</button>
-        </div>
-    </div>
-</div>
 
 </body>
 </html>
