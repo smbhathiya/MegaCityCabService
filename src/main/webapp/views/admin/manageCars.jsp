@@ -1,5 +1,19 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.CarDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Car" %>
+<%@ page import="java.util.List" %>
+<%!
+    private List<Car> getAllCars() {
+        try {
+            CarDAO dao = new CarDAO();
+            return dao.getAllCars();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+%>
 <%
     UUID adminUUID = (UUID) session.getAttribute("userId");
     String adminId = adminUUID != null ? adminUUID.toString() : null;
@@ -8,6 +22,51 @@
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
         return;
     }
+
+    // Handle form submissions
+    String action = request.getParameter("action");
+    if ("add".equals(action)) {
+        Car newCar = new Car();
+        newCar.setPlateNumber(request.getParameter("plate_number"));
+        newCar.setModel(request.getParameter("model"));
+        newCar.setBrand(request.getParameter("brand"));
+        newCar.setYear(Integer.parseInt(request.getParameter("year")));
+        newCar.setColor(request.getParameter("color"));
+        newCar.setCapacity(Integer.parseInt(request.getParameter("capacity")));
+        newCar.setStatus("available");
+        try {
+            CarDAO dao = new CarDAO();
+            dao.addCar(newCar);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    } else if ("update".equals(action)) {
+        Car updatedCar = new Car();
+        updatedCar.setId(UUID.fromString(request.getParameter("id")));
+        updatedCar.setPlateNumber(request.getParameter("plate_number"));
+        updatedCar.setModel(request.getParameter("model"));
+        updatedCar.setBrand(request.getParameter("brand"));
+        updatedCar.setYear(Integer.parseInt(request.getParameter("year")));
+        updatedCar.setColor(request.getParameter("color"));
+        updatedCar.setCapacity(Integer.parseInt(request.getParameter("capacity")));
+        updatedCar.setStatus(request.getParameter("status"));
+        try {
+            CarDAO dao = new CarDAO();
+            dao.updateCar(updatedCar);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    } else if ("delete".equals(action)) {
+        String carId = request.getParameter("id");
+        try {
+            CarDAO dao = new CarDAO();
+            dao.removeCar(carId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    List<Car> cars = getAllCars();
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -113,7 +172,7 @@
                 <div class="relative">
                     <button onclick="toggleProfileDropdown()" class="flex items-center gap-3 focus:outline-none" aria-label="Toggle profile dropdown">
                         <i data-lucide="user" class="w-8 h-8 text-primary"></i>
-                        <span class="text-lg text-white font-medium">${userName}</span>
+                        <span class="text-lg text-white font-medium"><%= session.getAttribute("userName") != null ? session.getAttribute("userName") : "Guest" %></span>
                     </button>
                     <div id="profileDropdown" class="absolute right-0 mt-2 w-56 bg-dark/95 border border-white/10 rounded-xl shadow-lg hidden">
                         <div class="py-2">
@@ -154,6 +213,37 @@
                     </tr>
                     </thead>
                     <tbody id="carTableBody">
+                    <%
+                        if (cars != null && !cars.isEmpty()) {
+                            for (Car car : cars) {
+                    %>
+                    <tr class="border-b border-white/10">
+                        <td class="px-6 py-4"><%= car.getPlateNumber() != null ? car.getPlateNumber() : "N/A" %></td>
+                        <td class="px-6 py-4"><%= car.getModel() != null ? car.getModel() : "N/A" %></td>
+                        <td class="px-6 py-4"><%= car.getBrand() != null ? car.getBrand() : "N/A" %></td>
+                        <td class="px-6 py-4"><%= car.getYear() %></td>
+                        <td class="px-6 py-4"><%= car.getColor() != null ? car.getColor() : "N/A" %></td>
+                        <td class="px-6 py-4"><%= car.getCapacity() %></td>
+                        <td class="px-6 py-4"><%= car.getStatus() != null ? car.getStatus() : "N/A" %></td>
+                        <td class="px-6 py-4 flex gap-2">
+                            <button onclick="openUpdateModal('<%= car.getId() %>')"
+                                    class="bg-blue-600 px-4 py-2 text-white rounded-full btn-primary font-semibold">Edit</button>
+                            <form method="post" action="<%= request.getContextPath() %>/views/admin/manageCars.jsp">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="id" value="<%= car.getId() %>">
+                                <button type="submit" onclick="return confirm('Are you sure you want to remove this car?')"
+                                        class="bg-red-600 px-4 py-2 text-white rounded-full btn-primary font-semibold">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <%
+                        }
+                    } else {
+                    %>
+                    <tr>
+                        <td colspan="8" class="text-center text-white py-4">No cars available</td>
+                    </tr>
+                    <% } %>
                     </tbody>
                 </table>
             </div>
@@ -188,7 +278,8 @@
 <div id="addCarModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="closeAddCarModal(event)">
     <div class="bg-accent p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-lg mx-4" onclick="event.stopPropagation()">
         <h2 class="text-2xl font-bold text-white mb-6">Add New Car</h2>
-        <form id="addCarForm" onsubmit="addCar(event)" class="modal-form-grid">
+        <form method="post" action="<%= request.getContextPath() %>/views/admin/manageCars.jsp" class="modal-form-grid">
+            <input type="hidden" name="action" value="add">
             <div class="mb-4">
                 <label for="plate_number" class="block text-sm font-medium text-gray-300 mb-2">Plate Number</label>
                 <input type="text" id="plate_number" name="plate_number" required
@@ -231,7 +322,8 @@
 <div id="updateCarModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="closeUpdateModal(event)">
     <div class="bg-accent p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-lg mx-4" onclick="event.stopPropagation()">
         <h2 class="text-2xl font-bold text-white mb-6">Update Car</h2>
-        <form id="updateCarForm" onsubmit="updateCar(event)" class="modal-form-grid">
+        <form method="post" action="<%= request.getContextPath() %>/views/admin/manageCars.jsp" class="modal-form-grid">
+            <input type="hidden" name="action" value="update">
             <input type="hidden" id="update_car_id" name="id">
             <div class="mb-4">
                 <label for="update_plate_number" class="block text-sm font-medium text-gray-300 mb-2">Plate Number</label>
@@ -336,92 +428,6 @@
             });
     }
 
-    // Fetch All Cars
-    document.addEventListener("DOMContentLoaded", function () {
-        fetchCars();
-    });
-
-    function fetchCars() {
-        const tbody = document.getElementById('carTableBody');
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-white py-4">Loading...</td></tr>';
-
-        fetch('<%= request.getContextPath() %>/admin/cars', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return response.json();
-            })
-            .then(cars => {
-                console.log('Fetched cars:', cars);
-                tbody.innerHTML = '';
-                cars.forEach(car => {
-                    console.log('Processing car:', car);
-                    const row = document.createElement('tr');
-                    row.className = 'border-b border-white/10';
-
-                    row.appendChild(createCell(car.plateNumber));
-                    row.appendChild(createCell(car.model));
-                    row.appendChild(createCell(car.brand));
-                    row.appendChild(createCell(car.year));
-                    row.appendChild(createCell(car.color));
-                    row.appendChild(createCell(car.capacity));
-                    row.appendChild(createCell(car.status));
-
-                    const actionCell = document.createElement('td');
-                    actionCell.className = "px-6 py-4 flex gap-2";
-
-                    const editBtn = document.createElement('button');
-                    editBtn.className = "bg-blue-600 px-4 py-2 text-white rounded-full btn-primary font-semibold edit-btn";
-                    editBtn.textContent = "Edit";
-                    editBtn.dataset.id = car.id;
-
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = "bg-red-600 px-4 py-2 text-white rounded-full btn-primary font-semibold remove-btn";
-                    removeBtn.textContent = "Remove";
-                    removeBtn.dataset.id = car.id;
-
-                    actionCell.appendChild(editBtn);
-                    actionCell.appendChild(removeBtn);
-                    row.appendChild(actionCell);
-
-                    tbody.appendChild(row);
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching cars:', error);
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-white py-4">Error loading data</td></tr>';
-                Toastify({
-                    text: "Error fetching cars: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
-    }
-
-    function createCell(text) {
-        const td = document.createElement('td');
-        td.className = "px-6 py-4";
-        td.textContent = text || 'N/A';
-        return td;
-    }
-
-    document.addEventListener("click", function (event) {
-        if (event.target.classList.contains("edit-btn")) {
-            const carId = event.target.dataset.id;
-            openUpdateModal(carId);
-        } else if (event.target.classList.contains("remove-btn")) {
-            const carId = event.target.dataset.id;
-            removeCar(carId);
-        }
-    });
-
     function openAddCarModal() {
         document.getElementById('addCarModal').classList.remove('hidden');
     }
@@ -432,232 +438,27 @@
         }
     }
 
-    function addCar(event) {
-        event.preventDefault();
-        const formData = {
-            plateNumber: document.getElementById('plate_number').value,
-            model: document.getElementById('model').value,
-            brand: document.getElementById('brand').value,
-            year: parseInt(document.getElementById('year').value),
-            color: document.getElementById('color').value,
-            capacity: parseInt(document.getElementById('capacity').value)
-        };
-
-        fetch('<%= request.getContextPath() %>/admin/cars?action=add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(formData)
-        })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === "success") {
-                    Toastify({
-                        text: data.message,
-                        duration: 1500,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "green" },
-                        stopOnFocus: true
-                    }).showToast();
-                    closeAddCarModal();
-                    document.getElementById('addCarForm').reset();
-                    fetchCars();
-                } else {
-                    Toastify({
-                        text: data.message || "Failed to add car",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error adding car:', error);
-                Toastify({
-                    text: "Error adding car: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
-    }
-
     function openUpdateModal(carId) {
-        // Fetch car details based on carId
-        fetch('<%= request.getContextPath() %>/admin/cars', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return response.json();
-            })
-            .then(cars => {
-                const car = cars.find(c => c.id === carId);
-                if (car) {
-                    document.getElementById('update_car_id').value = car.id;
-                    document.getElementById('update_plate_number').value = car.plateNumber || '';
-                    document.getElementById('update_model').value = car.model || '';
-                    document.getElementById('update_brand').value = car.brand || '';
-                    document.getElementById('update_year').value = car.year || '';
-                    document.getElementById('update_color').value = car.color || '';
-                    document.getElementById('update_capacity').value = car.capacity || '';
-                    document.getElementById('update_status').value = car.status || '';
-                    document.getElementById('updateCarModal').classList.remove('hidden');
-                } else {
-                    console.error('Car not found:', carId);
-                    Toastify({
-                        text: "Car not found",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching car details:', error);
-                Toastify({
-                    text: "Error loading car details: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
+        <% if (cars != null) { %>
+        const cars = <%= new com.google.gson.Gson().toJson(cars) %>;
+        const car = cars.find(c => c.id === carId);
+        if (car) {
+            document.getElementById('update_car_id').value = car.id;
+            document.getElementById('update_plate_number').value = car.plateNumber || '';
+            document.getElementById('update_model').value = car.model || '';
+            document.getElementById('update_brand').value = car.brand || '';
+            document.getElementById('update_year').value = car.year || '';
+            document.getElementById('update_color').value = car.color || '';
+            document.getElementById('update_capacity').value = car.capacity || '';
+            document.getElementById('update_status').value = car.status || '';
+            document.getElementById('updateCarModal').classList.remove('hidden');
+        }
+        <% } %>
     }
 
     function closeUpdateModal(event) {
         if (!event || event.target === document.getElementById('updateCarModal')) {
             document.getElementById('updateCarModal').classList.add('hidden');
-        }
-    }
-
-    function updateCar(event) {
-        event.preventDefault();
-        const formData = {
-            id: document.getElementById('update_car_id').value,
-            plateNumber: document.getElementById('update_plate_number').value,
-            model: document.getElementById('update_model').value,
-            brand: document.getElementById('update_brand').value,
-            year: parseInt(document.getElementById('update_year').value),
-            color: document.getElementById('update_color').value,
-            capacity: parseInt(document.getElementById('update_capacity').value),
-            status: document.getElementById('update_status').value
-        };
-
-        fetch('<%= request.getContextPath() %>/admin/cars?action=update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(formData)
-        })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === "success") {
-                    Toastify({
-                        text: data.message,
-                        duration: 1500,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "green" },
-                        stopOnFocus: true
-                    }).showToast();
-                    closeUpdateModal();
-                    fetchCars();
-                } else {
-                    Toastify({
-                        text: data.message || "Failed to update car",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error updating car:', error);
-                Toastify({
-                    text: "Error updating car: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
-    }
-
-    function removeCar(carId) {
-        if (confirm("Are you sure you want to remove this car?")) {
-            fetch('<%= request.getContextPath() %>/admin/cars?id=' + carId, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.status === "success") {
-                        Toastify({
-                            text: data.message,
-                            duration: 1500,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "green" },
-                            stopOnFocus: true
-                        }).showToast();
-                        fetchCars();
-                    } else {
-                        Toastify({
-                            text: data.message || "Failed to remove car",
-                            duration: 3000,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "red" },
-                            stopOnFocus: true
-                        }).showToast();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error removing car:', error);
-                    Toastify({
-                        text: "Error removing car: " + error.message,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                });
         }
     }
 </script>

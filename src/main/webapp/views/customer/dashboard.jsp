@@ -1,5 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.BookingDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.PaymentDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Booking" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Payment" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.text.DecimalFormat" %>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -74,6 +80,43 @@
     </style>
 </head>
 <body class="bg-dark text-light">
+<%
+    UUID customerUUID = (UUID) session.getAttribute("userId");
+    String customerId = customerUUID != null ? customerUUID.toString() : null;
+    String role = (String) session.getAttribute("role");
+    if (customerId == null || !"customer".equals(role)) {
+        response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+        return;
+    }
+
+    BookingDAO bookingDAO = new BookingDAO();
+    PaymentDAO paymentDAO = new PaymentDAO();
+    DecimalFormat df = new DecimalFormat("#.##");
+
+    // Calculate dashboard data
+    double totalSpend = 0.0;
+    int activeBookings = 0;
+    String bookingStatus = "None";
+    double points = 0.0;
+    String errorMessage = null;
+
+    try {
+        List<Payment> payments = paymentDAO.getPaymentHistoryByCustomerId(customerId);
+        totalSpend = payments.stream().mapToDouble(Payment::getAmount).sum();
+
+        List<Booking> bookings = bookingDAO.getBookingsByCustomerId(customerId);
+        activeBookings = (int) bookings.stream().filter(b -> "confirmed".equalsIgnoreCase(b.getBookingStatus())).count();
+        bookingStatus = activeBookings > 0 ? "In Progress" : "None";
+
+        points = totalSpend / 100.0;
+    } catch (Exception e) {
+        errorMessage = "Error fetching dashboard data: " + e.getMessage();
+        totalSpend = -1;
+        activeBookings = -1;
+        bookingStatus = "Error";
+        points = -1;
+    }
+%>
 
 <!-- Navbar -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/95 backdrop-blur-lg z-50 shadow-md">
@@ -92,7 +135,7 @@
                 <div class="relative">
                     <button onclick="toggleProfileDropdown()" class="flex items-center gap-3 focus:outline-none" aria-label="Toggle profile dropdown">
                         <i data-lucide="user" class="w-8 h-8 text-primary"></i>
-                        <span class="text-lg text-white font-medium">${userName}</span>
+                        <span class="text-lg text-white font-medium"><%= session.getAttribute("userName") != null ? session.getAttribute("userName") : "Guest" %></span>
                     </button>
                     <div id="profileDropdown" class="absolute right-0 mt-2 w-56 bg-dark/95 border border-white/10 rounded-xl shadow-lg hidden">
                         <div class="py-2">
@@ -109,31 +152,25 @@
 <!-- Main Content -->
 <main class="pt-28 pb-12 px-6">
     <div class="container mx-auto">
-        <%
-            UUID customerUUID = (UUID) session.getAttribute("userId");
-            String customerId = customerUUID != null ? customerUUID.toString() : null;
-            if (customerId != null) {
-        %>
         <!-- Dashboard Overview -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12 animate-slide-up" id="dashboard-overview">
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Total Spend</p>
-                <p class="text-3xl font-bold text-white" id="total-spend">Loading...</p>
+                <p class="text-3xl font-bold text-white" id="total-spend"><%= totalSpend >= 0 ? "Rs." + df.format(totalSpend) : "Error" %></p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Active Bookings</p>
-                <p class="text-3xl font-bold text-white" id="active-bookings">Loading...</p>
+                <p class="text-3xl font-bold text-white" id="active-bookings"><%= activeBookings >= 0 ? activeBookings : "Error" %></p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Booking Status</p>
-                <p class="text-3xl font-bold text-primary" id="booking-status">Loading...</p>
+                <p class="text-3xl font-bold text-primary" id="booking-status"><%= bookingStatus %></p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Points</p>
-                <p class="text-3xl font-bold text-white" id="points">Loading...</p>
+                <p class="text-3xl font-bold text-white" id="points"><%= points >= 0 ? df.format(points) : "Error" %></p>
             </div>
         </div>
-
 
         <!-- Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
@@ -161,25 +198,16 @@
                     <h2 class="text-xl font-semibold text-white">Payment & Billing</h2>
                 </div>
             </a>
-<%--            <a href="/feedback" class="card p-8 animate-slide-up">--%>
-<%--                <div class="flex flex-col items-center text-center">--%>
-<%--                    <i data-lucide="star" class="w-12 h-12 text-primary mb-4"></i>--%>
-<%--                    <h2 class="text-xl font-semibold text-white">Rate Your Driver</h2>--%>
-<%--                </div>--%>
-<%--            </a>--%>
+            <a href="${pageContext.request.contextPath}/views/customer/customer-help.jsp" class="card p-8 animate-slide-up">
+                <div class="flex flex-col items-center text-center">
+                    <i data-lucide="circle-help" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">Help</h2>
+                </div>
+            </a>
         </div>
-
-        <%
-            } else {
-                Object userIdObj = session.getAttribute("userId");
-                if (userIdObj == null || !(userIdObj instanceof UUID)) {
-                    response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
-                    return;
-                }
-            }
-        %>
     </div>
-    <!-- Footer (Unchanged) -->
+
+    <!-- Footer -->
     <footer class="bg-dark/50 py-12 border-t border-white/10">
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
@@ -235,43 +263,6 @@
 <script>
     lucide.createIcons();
 
-    document.addEventListener("DOMContentLoaded", function () {
-        fetchDashboardData();
-    });
-
-    function fetchDashboardData() {
-        fetch('<%= request.getContextPath() %>/customer/dashboard-data', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to fetch dashboard data');
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('total-spend').textContent = 'Rs.'+data.totalSpend.toFixed(2);
-                document.getElementById('active-bookings').textContent = data.activeBookings;
-                document.getElementById('booking-status').textContent = data.bookingStatus;
-                document.getElementById('points').textContent = data.points.toFixed(1);
-            })
-            .catch(error => {
-                console.error('Error fetching dashboard data:', error);
-                document.getElementById('total-spend').textContent = 'Error';
-                document.getElementById('active-bookings').textContent = 'Error';
-                document.getElementById('booking-status').textContent = 'Error';
-                document.getElementById('points').textContent = 'Error';
-                Toastify({
-                    text: "Error loading dashboard data: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" }
-                }).showToast();
-            });
-    }
-
     function toggleProfileDropdown() {
         document.getElementById('profileDropdown').classList.toggle('hidden');
     }
@@ -285,9 +276,10 @@
     }
 
     function confirmLogout() {
-        fetch('${pageContext.request.contextPath}/logout', {
+        fetch('<%= request.getContextPath() %>/logout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
         })
             .then(response => response.json())
             .then(data => {
@@ -310,6 +302,18 @@
     function closeSupportModal() {
         document.getElementById('support-modal').classList.add('hidden');
     }
+
+    <% if (errorMessage != null) { %>
+    Toastify({
+        text: "<%= errorMessage %>",
+        duration: 3000,
+        close: true,
+        gravity: "top",
+        position: "right",
+        style: { background: "red" },
+        stopOnFocus: true
+    }).showToast();
+    <% } %>
 </script>
 
 </body>

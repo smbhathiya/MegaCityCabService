@@ -102,7 +102,7 @@
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <a href="../index.jsp" class="flex items-center gap-3">
+                    <a href="${pageContext.request.contextPath}/" class="flex items-center gap-3">
                         <i data-lucide="car" class="w-10 h-10 text-primary animate-pulse-slow"></i>
                         <div>
                             <span class="text-3xl font-extrabold text-light tracking-tight">Mega City Cabs</span>

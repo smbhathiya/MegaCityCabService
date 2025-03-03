@@ -1,5 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Booking" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Car" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,6 +42,21 @@
     </style>
 </head>
 <body class="bg-dark text-white min-h-screen flex flex-col">
+<%
+    UUID customerUUID = (UUID) session.getAttribute("userId");
+    String customerId = customerUUID != null ? customerUUID.toString() : null;
+    String role = (String) session.getAttribute("role");
+    if (customerId == null || !"customer".equals(role)) {
+        response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+        return;
+    }
+
+    String errorMessage = (String) session.getAttribute("errorMessage");
+    Booking newBooking = (Booking) session.getAttribute("newBooking");
+    if (errorMessage != null) {
+        session.removeAttribute("errorMessage");
+    }
+%>
 <!-- Navbar -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/90 backdrop-blur-md z-50">
     <div class="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -70,20 +87,11 @@
 
 <!-- Main Content -->
 <main class="flex-1 flex items-center justify-center px-6 py-28">
-    <%
-        Object userIdObj = session.getAttribute("userId");
-        String customerId = null;
-        if (userIdObj != null && userIdObj instanceof UUID) {
-            customerId = ((UUID) userIdObj).toString();
-        }
-        if (customerId == null) {
-            response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
-            return;
-        }
-    %>
     <div class="form-container p-8 rounded-xl shadow-2xl w-full max-w-2xl mx-auto animate-slide-up">
+        <% if (newBooking == null) { %>
         <h2 class="text-3xl font-bold text-white mb-8 text-center">Book a Ride</h2>
-        <form id="bookingForm" onsubmit="submitBooking(event)">
+        <form method="post" action="<%= request.getContextPath() %>/booking">
+            <input type="hidden" name="customer_id" value="<%= customerId %>">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <div class="mb-6">
@@ -114,6 +122,28 @@
                 <i data-lucide="check" class="w-5 h-5"></i> Book Now
             </button>
         </form>
+        <% } else { %>
+        <h2 class="text-3xl font-bold text-white mb-8 text-center">Booking Details</h2>
+        <div class="text-gray-300 mb-6">
+            <p><strong>Booking Number:</strong> <%= newBooking.getBookingNumber() %></p>
+            <p><strong>Car:</strong> <%= newBooking.getCarDetails() != null ? newBooking.getCarDetails().getBrand() + " " + newBooking.getCarDetails().getModel() + " (" + newBooking.getCarDetails().getPlateNumber() + ")" : "N/A" %></p>
+            <p><strong>Pickup:</strong> <%= newBooking.getPickupLocation() %></p>
+            <p><strong>Drop-off:</strong> <%= newBooking.getDropoffLocation() %></p>
+            <p><strong>Date:</strong> <%= newBooking.getHireDate() %></p>
+            <p><strong>Time:</strong> <%= newBooking.getHireTime() %></p>
+            <p><strong>Distance:</strong> <%= newBooking.getDistance() > 0 ? String.format("%.2f km", newBooking.getDistance()) : "N/A" %></p>
+            <p><strong>Total Fare:</strong> <%= newBooking.getTotalFare() > 0 ? "Rs. " + String.format("%.2f", newBooking.getTotalFare()) : "N/A" %></p>
+        </div>
+        <form method="post" action="<%= request.getContextPath() %>/booking">
+            <input type="hidden" name="action" value="confirmBooking">
+            <input type="hidden" name="bookingId" value="<%= newBooking.getId().toString() %>">
+            <div class="flex gap-4 justify-end">
+                <button type="submit" name="status" value="confirmed" class="bg-primary text-dark px-6 py-2 rounded-full btn-primary font-semibold">Confirm</button>
+                <button type="submit" name="status" value="cancelled" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 font-semibold">Cancel</button>
+            </div>
+        </form>
+        <% session.removeAttribute("newBooking"); %>
+        <% } %>
         <p class="mt-6 text-center text-gray-400 text-sm">
             Back to <a href="${pageContext.request.contextPath}/views/customer/dashboard.jsp" class="text-primary hover:underline font-medium">Dashboard</a>
         </p>
@@ -129,40 +159,13 @@
                 <p class="text-gray-400">© <%= java.time.Year.now().getValue() %> All rights reserved</p>
             </div>
             <div class="flex gap-4 mt-4 md:mt-0">
-                <a href="#" class="text-primary hover:text-primary-700">
-                    <i data-lucide="twitter" class="w-6 h-6"></i>
-                </a>
-                <a href="#" class="text-primary hover:text-primary-700">
-                    <i data-lucide="linkedin" class="w-6 h-6"></i>
-                </a>
-                <a href="#" class="text-primary hover:text-primary-700">
-                    <i data-lucide="github" class="w-6 h-6"></i>
-                </a>
+                <a href="#" class="text-primary hover:text-primary-700"><i data-lucide="twitter" class="w-6 h-6"></i></a>
+                <a href="#" class="text-primary hover:text-primary-700"><i data-lucide="linkedin" class="w-6 h-6"></i></a>
+                <a href="#" class="text-primary hover:text-primary-700"><i data-lucide="github" class="w-6 h-6"></i></a>
             </div>
         </div>
     </div>
 </footer>
-
-<!-- Booking Confirmation Modal -->
-<div id="bookingModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div class="bg-accent p-6 rounded-xl shadow-2xl max-w-md w-full">
-        <h3 class="text-xl font-bold text-white mb-4">Booking Details</h3>
-        <div class="text-gray-300 mb-6">
-            <p><strong>Booking Number:</strong> <span id="bookingNumber"></span></p>
-            <p><strong>Car:</strong> <span id="carDetails"></span></p>
-            <p><strong>Pickup:</strong> <span id="pickupLocation"></span></p>
-            <p><strong>Drop-off:</strong> <span id="dropoffLocation"></span></p>
-            <p><strong>Date:</strong> <span id="hireDate"></span></p>
-            <p><strong>Time:</strong> <span id="hireTime"></span></p>
-            <p><strong>Distance:</strong> <span id="distance"></span></p>
-            <p><strong>Total Fare:</strong> <span id="totalFare"></span></p>
-        </div>
-        <div class="flex gap-4 justify-end">
-            <button onclick="confirmBooking('confirmed')" class="bg-primary text-dark px-6 py-2 rounded-full btn-primary font-semibold">Confirm</button>
-            <button onclick="confirmBooking('cancelled')" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 font-semibold">Cancel</button>
-        </div>
-    </div>
-</div>
 
 <!-- Logout Confirmation Modal -->
 <div id="logoutModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -180,8 +183,7 @@
     lucide.createIcons();
 
     function toggleProfileDropdown() {
-        const dropdown = document.getElementById('profileDropdown');
-        dropdown.classList.toggle('hidden');
+        document.getElementById('profileDropdown').classList.toggle('hidden');
     }
 
     function showLogoutModal() {
@@ -213,7 +215,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 Toastify({
                     text: "An error occurred during logout.",
                     duration: 3000,
@@ -225,122 +226,16 @@
             });
     }
 
-    function submitBooking(event) {
-        event.preventDefault();
-        const customerId = '<%= customerId %>';
-        const formData = {
-            customer_id: customerId,
-            pickup_location: document.getElementById('pickup_location').value,
-            dropoff_location: document.getElementById('dropoff_location').value,
-            hire_date: document.getElementById('hire_date').value,
-            hire_time: document.getElementById('hire_time').value,
-            passenger_count: parseInt(document.getElementById('passenger_count').value, 10)
-        };
-
-        fetch('<%= request.getContextPath() %>/booking', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.statusText);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Booking Response:', data);
-                if (data.status === 'success') {
-                    document.getElementById('bookingNumber').innerText = data.bookingNumber;
-                    document.getElementById('carDetails').innerText = data.carDetails.plateNumber;
-                    document.getElementById('pickupLocation').innerText = data.pickupLocation;
-                    document.getElementById('dropoffLocation').innerText = data.dropoffLocation;
-                    document.getElementById('hireDate').innerText = data.hireDate;
-                    document.getElementById('hireTime').innerText = data.hireTime;
-                    document.getElementById('distance').innerText = data.distance.toFixed(2) + ' km';
-                    document.getElementById('totalFare').innerText = 'Rs. ' + data.total_fare.toFixed(2);
-
-                    document.getElementById('bookingModal').dataset.bookingId = data.bookingId;
-                    document.getElementById('bookingModal').classList.remove('hidden');
-                } else {
-                    Toastify({
-                        text: "Booking failed: " + data.message,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" }
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Toastify({
-                    text: "An error occurred while booking: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" }
-                }).showToast();
-            });
-    }
-
-    function confirmBooking(status) {
-        const bookingId = document.getElementById('bookingModal').dataset.bookingId;
-        fetch('<%= request.getContextPath() %>/booking/confirm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId: bookingId, status: status })
-        })
-            .then(response => {
-                console.log('Response Status:', response.status);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.statusText);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Parsed Confirm Response:', data);
-                if (data.status === 'success') {
-                    Toastify({
-                        text: `Booking ${status} successfully!`,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "#FCC603", color: "#1A1A1A" }
-                    }).showToast();
-                    setTimeout(() => {
-                        window.location.href = "<%= request.getContextPath() %>/views/customer/dashboard.jsp";
-                    }, 2000);
-                } else {
-                    Toastify({
-                        text: `${status == 'confirmed' ? 'Confirmation' : 'Cancellation'} failed: ${data.message}`,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" }
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Toastify({
-                    text: `An error occurred while ${status == 'confirmed' ? 'confirming' : 'cancelling'}: ${error.message}`,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" }
-                }).showToast();
-            });
-    }
-
-    function closeBookingModal() {
-        document.getElementById('bookingModal').classList.add('hidden');
-    }
+    <% if (errorMessage != null) { %>
+    Toastify({
+        text: "<%= errorMessage %>",
+        duration: 3000,
+        close: true,
+        gravity: "top",
+        position: "right",
+        style: { background: "red" }
+    }).showToast();
+    <% } %>
 </script>
 </body>
 </html>

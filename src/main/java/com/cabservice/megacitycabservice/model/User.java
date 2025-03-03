@@ -33,6 +33,10 @@ public class User {
         this.updatedAt = updatedAt;
     }
 
+    public User() {
+
+    }
+
 
     public UUID getId() {
         return id;

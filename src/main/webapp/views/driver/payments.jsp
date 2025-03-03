@@ -1,5 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.DriverPaymentDAO" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.text.DecimalFormat" %>
 <%
     UUID driverUUID = (UUID) session.getAttribute("userId");
     String driverId = driverUUID != null ? driverUUID.toString() : null;
@@ -7,6 +10,19 @@
     if (driverId == null || !"driver".equals(role)) {
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
         return;
+    }
+
+    DriverPaymentDAO paymentDAO = new DriverPaymentDAO();
+    DecimalFormat df = new DecimalFormat("#.##");
+    List<DriverPaymentDAO.DriverPayment> pendingPayments = null;
+    List<DriverPaymentDAO.DriverPayment> paymentHistory = null;
+    String errorMessage = null;
+
+    try {
+        pendingPayments = paymentDAO.getPendingPaymentsByDriverId(driverId);
+        paymentHistory = paymentDAO.getPaymentHistoryByDriverId(driverId);
+    } catch (Exception e) {
+        errorMessage = "Error fetching payment data: " + e.getMessage();
     }
 %>
 <!DOCTYPE html>
@@ -96,7 +112,24 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Amount</th>
                     </tr>
                     </thead>
-                    <tbody id="pendingPaymentsTableBody"></tbody>
+                    <tbody id="pendingPaymentsTableBody">
+                    <% if (pendingPayments != null && !pendingPayments.isEmpty()) {
+                        for (DriverPaymentDAO.DriverPayment payment : pendingPayments) {
+                    %>
+                    <tr class="border-b border-white/10">
+                        <td class="px-6 py-4"><%= payment.bookingNumber != null ? payment.bookingNumber : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.pickupLocation != null ? payment.pickupLocation : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.dropoffLocation != null ? payment.dropoffLocation : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.hireDate != null ? payment.hireDate : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.amount > 0 ? "Rs. " + df.format(payment.amount) : "N/A" %></td>
+                    </tr>
+                    <%  }
+                    } else { %>
+                    <tr>
+                        <td colspan="5" class="text-center text-white py-4">No pending payments</td>
+                    </tr>
+                    <% } %>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -117,7 +150,30 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                     </tr>
                     </thead>
-                    <tbody id="paymentHistoryTableBody"></tbody>
+                    <tbody id="paymentHistoryTableBody">
+                    <% if (paymentHistory != null && !paymentHistory.isEmpty()) {
+                        for (DriverPaymentDAO.DriverPayment payment : paymentHistory) {
+                    %>
+                    <tr class="border-b border-white/10">
+                        <td class="px-6 py-4"><%= payment.bookingNumber != null ? payment.bookingNumber : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.amount > 0 ? "Rs. " + df.format(payment.amount) : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.paymentMethod != null ? payment.paymentMethod : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.transactionId != null ? payment.transactionId : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.status != null ? payment.status : "N/A" %></td>
+                        <td class="px-6 py-4"><%= payment.paymentDate != null ? payment.paymentDate : "N/A" %></td>
+                        <td class="px-6 py-4">
+                            <button class="text-primary hover:text-primary-700 flex items-center gap-2" onclick='printBill(<%= new com.google.gson.Gson().toJson(payment) %>)'>
+                                <i data-lucide="printer" class="w-5 h-5"></i> Print Bill
+                            </button>
+                        </td>
+                    </tr>
+                    <%  }
+                    } else { %>
+                    <tr>
+                        <td colspan="7" class="text-center text-white py-4">No payment history</td>
+                    </tr>
+                    <% } %>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -190,116 +246,6 @@
             });
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        fetchPayments();
-    });
-
-    function fetchPayments() {
-        const pendingTbody = document.getElementById('pendingPaymentsTableBody');
-        const historyTbody = document.getElementById('paymentHistoryTableBody');
-        pendingTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Loading...</td></tr>';
-        historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">Loading...</td></tr>';
-
-        // Fetch pending payments
-        fetch('<%= request.getContextPath() %>/driver/payments/pending', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Pending payments:', data);
-                if (data.status === 'success') {
-                    pendingTbody.innerHTML = '';
-                    data.data.forEach(payment => {
-                        const row = createPendingPaymentRow(payment);
-                        pendingTbody.appendChild(row);
-                    });
-                    if (data.data.length === 0) {
-                        pendingTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">No pending payments</td></tr>';
-                    }
-                } else {
-                    throw new Error(data.data);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching pending payments:', error);
-                pendingTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">Error loading data</td></tr>';
-                Toastify({ text: "Error fetching pending payments: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-            });
-
-        // Fetch payment history
-        fetch('<%= request.getContextPath() %>/driver/payments/history', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Payment history:', data);
-                if (data.status === 'success') {
-                    historyTbody.innerHTML = '';
-                    data.data.forEach(payment => {
-                        const row = createPaymentHistoryRow(payment);
-                        historyTbody.appendChild(row);
-                    });
-                    if (data.data.length === 0) {
-                        historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">No payment history</td></tr>';
-                    }
-                } else {
-                    throw new Error(data.data);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching payment history:', error);
-                historyTbody.innerHTML = '<tr><td colspan="7" class="text-center text-white py-4">Error loading data</td></tr>';
-                Toastify({ text: "Error fetching payment history: " + error.message, duration: 3000, close: true, gravity: "top", position: "right", style: { background: "red" } }).showToast();
-            });
-    }
-
-    function createPendingPaymentRow(payment) {
-        const row = document.createElement('tr');
-        row.className = 'border-b border-white/10';
-
-        row.appendChild(createCell(payment.bookingNumber));
-        row.appendChild(createCell(payment.pickupLocation));
-        row.appendChild(createCell(payment.dropoffLocation));
-        row.appendChild(createCell(payment.hireDate));
-        row.appendChild(createCell('Rs.' + (payment.amount ? payment.amount.toFixed(2) : 'N/A')));
-
-        return row;
-    }
-
-    function createPaymentHistoryRow(payment) {
-        const row = document.createElement('tr');
-        row.className = 'border-b border-white/10';
-
-        row.appendChild(createCell(payment.bookingNumber));
-        row.appendChild(createCell('Rs.' + (payment.amount ? payment.amount.toFixed(2) : 'N/A')));
-        row.appendChild(createCell(payment.paymentMethod));
-        row.appendChild(createCell(payment.transactionId));
-        row.appendChild(createCell(payment.status));
-        row.appendChild(createCell(payment.paymentDate ? new Date(payment.paymentDate).toLocaleString() : 'N/A'));
-
-        const actionCell = document.createElement('td');
-        actionCell.className = "px-6 py-4";
-        const printBtn = document.createElement('button');
-        printBtn.className = "text-primary hover:text-primary-700 flex items-center gap-2";
-        printBtn.innerHTML = '<i data-lucide="printer" class="w-5 h-5"></i> Print Bill';
-        printBtn.onclick = () => printBill(payment);
-        actionCell.appendChild(printBtn);
-        row.appendChild(actionCell);
-
-        return row;
-    }
-
-    function createCell(text) {
-        const td = document.createElement('td');
-        td.className = "px-6 py-4";
-        td.textContent = text || 'N/A';
-        return td;
-    }
-
     function printBill(payment) {
         const doc = new jsPDF();
 
@@ -319,8 +265,21 @@
         doc.setFontSize(10);
         doc.text("Thank you for choosing Mega City Cabs!", 20, 110);
 
-        doc.save(`Receipt_${payment.bookingNumber || 'Unknown'}.pdf`);
+        doc.save("Receipt_"+payment.bookingNumber || 'Unknown'+".pdf");
     }
+
+    // Display error toast if applicable
+    <% if (errorMessage != null) { %>
+    Toastify({
+        text: "<%= errorMessage %>",
+        duration: 3000,
+        close: true,
+        gravity: "top",
+        position: "right",
+        style: { background: "red" },
+        stopOnFocus: true
+    }).showToast();
+    <% } %>
 </script>
 
 </body>

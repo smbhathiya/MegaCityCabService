@@ -23,101 +23,117 @@ public class BookingServlet extends HttpServlet {
     // Create a new booking
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-
-            StringBuilder stringBuilder = new StringBuilder();
-            String line;
-            while ((line = request.getReader().readLine()) != null) {
-                stringBuilder.append(line);
-            }
-
-            String requestBody = stringBuilder.toString();
-            JsonObject jsonObject = gson.fromJson(requestBody, JsonObject.class);
-
-            UUID customerId = UUID.fromString(jsonObject.get("customer_id").getAsString());
-            String pickupLocation = jsonObject.get("pickup_location").getAsString();
-            String dropoffLocation = jsonObject.get("dropoff_location").getAsString();
-            String hireDate = jsonObject.get("hire_date").getAsString();
-            String hireTime = jsonObject.get("hire_time").getAsString();
-            int passengerCount = jsonObject.get("passenger_count").getAsInt();
-
-            try {
-                CarDAO carDAO = new CarDAO();
-                BookingDAO bookingDAO = new BookingDAO();
-                CarAssignmentDAO carAssignmentDAO = new CarAssignmentDAO();
-
-                // Check for available cars
-                List<Car> availableCars = carDAO.getAvailableCarsByDateAndCapacity(hireDate, passengerCount);
-                if (availableCars.isEmpty()) {
-                    response.getWriter().write("{\"status\": \"error\", \"message\": \"No cars available for the selected date and passenger count.\"}");
-                    return;
-                }
-
-                Car selectedCar = availableCars.get(0);
-
-                // Fetch the driver assigned to the selected car
-                UUID driverId = carAssignmentDAO.getDriverIdByCarId(selectedCar.getId());
-                if (driverId == null) {
-                    response.getWriter().write("{\"status\": \"error\", \"message\": \"No driver assigned to the selected car.\"}");
-                    return;
-                }
-
-                // Simulate distance (10-60 km)
-                Random random = new Random();
-                double distance = 10 + (random.nextDouble() * 50);
-
-                // Calculate price (e.g., Rs. 50 per km + Rs. 10 per passenger)
-                double totalFare = (distance * 50) + (passengerCount * 10);
-
-                String bookingNumber = "BOOK-" + String.format("%06d", random.nextInt(1000000));
-
-                // Create booking with driver_id
-                UUID bookingId = UUID.randomUUID();
-                Booking booking = new Booking(
-                        bookingId,
-                        bookingNumber,
-                        customerId,
-                        driverId, // Set driver_id here
-                        selectedCar.getId(),
-                        pickupLocation,
-                        dropoffLocation,
-                        distance,
-                        "pending",
-                        totalFare,
-                        "pending",
-                        hireDate,
-                        hireTime
-                );
-
-                boolean isAdded = bookingDAO.addBooking(booking);
-                if (isAdded) {
-                    JsonObject carDetails = new JsonObject();
-                    carDetails.addProperty("brand", selectedCar.getBrand());
-                    carDetails.addProperty("model", selectedCar.getModel());
-                    carDetails.addProperty("plateNumber", selectedCar.getPlateNumber());
-
-                    JsonObject responseJson = new JsonObject();
-                    responseJson.addProperty("status", "success");
-                    responseJson.addProperty("bookingId", bookingId.toString());
-                    responseJson.addProperty("bookingNumber", bookingNumber);
-                    responseJson.add("carDetails", carDetails);
-                    responseJson.addProperty("pickupLocation", pickupLocation);
-                    responseJson.addProperty("dropoffLocation", dropoffLocation);
-                    responseJson.addProperty("hireDate", hireDate);
-                    responseJson.addProperty("hireTime", hireTime);
-                    responseJson.addProperty("distance", distance);
-                    responseJson.addProperty("total_fare", totalFare);
-
-                    response.getWriter().write(gson.toJson(responseJson));
-                } else {
-                    response.getWriter().write("{\"status\": \"error\", \"message\": \"Failed to create booking.\"}");
-                }
-            } catch (SQLException e) {
-                response.getWriter().write("{\"status\": \"error\", \"message\": \"Database error: " + e.getMessage() + "\"}");
-                e.printStackTrace();
-            }
+        HttpSession session = request.getSession();
+        UUID customerId = (UUID) session.getAttribute("userId");
+        if (customerId == null) {
+            session.setAttribute("errorMessage", "User not logged in.");
+            response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            return;
         }
+
+        String action = request.getParameter("action");
+        if ("confirmBooking".equals(action)) {
+            handleConfirmation(request, response);
+        } else {
+            handleBookingCreation(request, response);
+        }
+    }
+
+    private void handleBookingCreation(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        HttpSession session = request.getSession();
+        UUID customerId = (UUID) session.getAttribute("userId");
+
+        String pickupLocation = request.getParameter("pickup_location");
+        String dropoffLocation = request.getParameter("dropoff_location");
+        String hireDate = request.getParameter("hire_date");
+        String hireTime = request.getParameter("hire_time");
+        int passengerCount;
+        try {
+            passengerCount = Integer.parseInt(request.getParameter("passenger_count"));
+        } catch (NumberFormatException e) {
+            session.setAttribute("errorMessage", "Invalid passenger count.");
+            response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            return;
+        }
+
+        if (pickupLocation == null || dropoffLocation == null || hireDate == null || hireTime == null) {
+            session.setAttribute("errorMessage", "Missing required fields.");
+            response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            return;
+        }
+
+        try {
+            CarDAO carDAO = new CarDAO();
+            BookingDAO bookingDAO = new BookingDAO();
+            CarAssignmentDAO carAssignmentDAO = new CarAssignmentDAO();
+
+            List<Car> availableCars = carDAO.getAvailableCarsByDateAndCapacity(hireDate, passengerCount);
+            if (availableCars.isEmpty()) {
+                session.setAttribute("errorMessage", "No cars available for the selected date and passenger count.");
+                response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+                return;
+            }
+
+            Car selectedCar = availableCars.get(0);
+            UUID driverId = carAssignmentDAO.getDriverIdByCarId(selectedCar.getId());
+            if (driverId == null) {
+                session.setAttribute("errorMessage", "No driver assigned to the selected car.");
+                response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+                return;
+            }
+
+            Random random = new Random();
+            double distance = 10 + (random.nextDouble() * 50);
+            double totalFare = (distance * 50) + (passengerCount * 10);
+            String bookingNumber = "BOOK-" + String.format("%06d", random.nextInt(1000000));
+            UUID bookingId = UUID.randomUUID();
+
+            Booking booking = new Booking(
+                    bookingId, bookingNumber, customerId, driverId, selectedCar.getId(),
+                    pickupLocation, dropoffLocation, distance, "pending", totalFare, "pending", hireDate, hireTime
+            );
+            booking.setCarDetails(selectedCar); // Set car details for display
+
+            boolean isAdded = bookingDAO.addBooking(booking);
+            if (isAdded) {
+                session.setAttribute("newBooking", booking);
+                response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            } else {
+                session.setAttribute("errorMessage", "Failed to create booking in database.");
+                response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            }
+        } catch (SQLException e) {
+            session.setAttribute("errorMessage", "Database error: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            e.printStackTrace();
+        } catch (Exception e) {
+            session.setAttribute("errorMessage", "Unexpected error: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            e.printStackTrace();
+        }
+    }
+
+    private void handleConfirmation(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        HttpSession session = request.getSession();
+        String bookingId = request.getParameter("bookingId");
+        String status = request.getParameter("status");
+
+        try {
+            BookingDAO bookingDAO = new BookingDAO();
+            boolean updated = bookingDAO.updateBookingStatus(UUID.fromString(bookingId), status);
+            if (updated) {
+                session.removeAttribute("newBooking");
+                response.sendRedirect(request.getContextPath() + "/views/customer/dashboard.jsp");
+            } else {
+                session.setAttribute("errorMessage", "Failed to update booking status.");
+                response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            }
+        } catch (SQLException e) {
+            session.setAttribute("errorMessage", "Error updating booking status: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/views/customer/addBooking.jsp");
+            e.printStackTrace();
+        }
+    }
 
     // Cancel a booking
     protected void doPut(HttpServletRequest request, HttpServletResponse response)

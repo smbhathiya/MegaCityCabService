@@ -11,7 +11,7 @@
  Target Server Version : 80040 (8.0.40)
  File Encoding         : 65001
 
- Date: 20/02/2025 20:52:08
+ Date: 01/03/2025 22:55:37
 */
 
 SET NAMES utf8mb4;
@@ -99,9 +99,9 @@ CREATE TABLE `drivers`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `user_id`(`user_id` ASC) USING BTREE,
   UNIQUE INDEX `license_number`(`license_number` ASC) USING BTREE,
-  INDEX `car_id`(`car_id` ASC) USING BTREE,
+  INDEX `drivers_ibfk_2`(`car_id` ASC) USING BTREE,
   CONSTRAINT `drivers_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
-  CONSTRAINT `drivers_ibfk_2` FOREIGN KEY (`car_id`) REFERENCES `cars` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+  CONSTRAINT `drivers_ibfk_2` FOREIGN KEY (`car_id`) REFERENCES `cars` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------

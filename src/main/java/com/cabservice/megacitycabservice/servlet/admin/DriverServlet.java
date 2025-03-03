@@ -1,4 +1,4 @@
-package com.cabservice.megacitycabservice.servlet.driver;
+package com.cabservice.megacitycabservice.servlet.admin;
 
 import com.cabservice.megacitycabservice.dao.DriverDAO;
 import com.cabservice.megacitycabservice.model.Driver;
@@ -86,13 +86,10 @@ public class DriverServlet extends HttpServlet {
 
     private void addDriver(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            BufferedReader reader = request.getReader();
-            JsonObject json = gson.fromJson(reader, JsonObject.class);
-
-            String name = json.get("name").getAsString();
-            String email = json.get("email").getAsString();
-            String password = json.get("password").getAsString();
-            String licenseNumber = json.get("licenseNumber").getAsString();
+            String name = request.getParameter("name");
+            String email = request.getParameter("email");
+            String password = request.getParameter("password");
+            String licenseNumber = request.getParameter("licenseNumber");
 
             if (name == null || email == null || password == null || licenseNumber == null) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required fields");

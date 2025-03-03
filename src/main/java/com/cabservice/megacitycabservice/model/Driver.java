@@ -35,6 +35,10 @@ public class Driver {
         this.licenseNumber = licenseNumber;
     }
 
+    public Driver() {
+
+    }
+
     // Getters and Setters
     public UUID getId() {
         return id;

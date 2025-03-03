@@ -13,6 +13,7 @@ public class Car {
     private String status;
     private String createdAt;
     private String updatedAt;
+    private int bookings;
 
     public Car(UUID id, String brand, String model, String plateNumber, int capacity) {
         this.id = id;
@@ -37,6 +38,11 @@ public class Car {
 
     public Car() {
 
+    }
+
+    public Car(String plateNumber, int bookings) {
+        this.plateNumber = plateNumber;
+        this.bookings = bookings;
     }
 
     // Getters and Setters
@@ -118,5 +124,13 @@ public class Car {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public int getBookings() {
+        return bookings;
+    }
+
+    public void setBookings(int bookings) {
+        this.bookings = bookings;
     }
 }

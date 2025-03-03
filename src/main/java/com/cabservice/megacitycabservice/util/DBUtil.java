@@ -39,15 +39,4 @@ public class DBUtil {
         }
     }
 
-    public static void closeConnection() {
-        if (connection != null) {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            } finally {
-                connection = null;
-            }
-        }
-    }
 }

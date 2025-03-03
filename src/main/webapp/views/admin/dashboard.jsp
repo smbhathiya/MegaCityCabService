@@ -1,5 +1,15 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.AdminDashboardDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Booking" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Payment" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.text.DecimalFormat" %>
+<%@ page import="java.time.LocalDate" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Map" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,8 +102,89 @@
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
         return;
     }
-%>
 
+    AdminDashboardDAO dashboardDAO = new AdminDashboardDAO();
+    DecimalFormat df = new DecimalFormat("#.##");
+
+    // Fetch dashboard stats
+    int totalCars = 0;
+    int totalDrivers = 0;
+    int activeBookings = 0;
+    double totalRevenue = 0.0;
+    double systemProfit = 0.0;
+    List<Payment> paymentHistory = new ArrayList<>();
+    List<Booking> bookings = new ArrayList<>();
+
+    try {
+        totalCars = dashboardDAO.getTotalCars();
+        totalDrivers = dashboardDAO.getTotalDrivers();
+        bookings = dashboardDAO.getAllBookings();
+        paymentHistory = dashboardDAO.getPaymentHistory();
+
+        // Calculate active bookings
+        activeBookings = (int) bookings.stream().filter(b -> "confirmed".equals(b.getBookingStatus())).count();
+
+        // Calculate total revenue and system profit
+        totalRevenue = paymentHistory.stream().mapToDouble(Payment::getAmount).sum() / 0.7;
+        systemProfit = totalRevenue * 0.3;
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        // Set error values if fetching fails
+        totalCars = -1;
+        totalDrivers = -1;
+        activeBookings = -1;
+        totalRevenue = -1;
+        systemProfit = -1;
+    }
+
+    // Prepare data for revenue chart (last 30 days)
+    LocalDate now = LocalDate.now();
+    LocalDate thirtyDaysAgo = now.minusDays(30);
+    Map<String, Double> dailyEarnings = new HashMap<>();
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    for (Payment payment : paymentHistory) {
+        LocalDate paymentDate = payment.getPaymentDate().toLocalDateTime().toLocalDate();
+        if (!paymentDate.isBefore(thirtyDaysAgo) && !paymentDate.isAfter(now)) {
+            String dateKey = paymentDate.format(dateFormatter);
+            dailyEarnings.put(dateKey, dailyEarnings.getOrDefault(dateKey, 0.0) + (payment.getAmount() / 0.7));
+        }
+    }
+
+    StringBuilder labelsJson = new StringBuilder("[");
+    StringBuilder earningsJson = new StringBuilder("[");
+    for (int i = 0; i <= 30; i++) {
+        LocalDate date = now.minusDays(i);
+        String dateKey = date.format(dateFormatter);
+        labelsJson.append("\"").append(date.format(DateTimeFormatter.ofPattern("d MMM"))).append("\"");
+        earningsJson.append(dailyEarnings.getOrDefault(dateKey, 0.0));
+        if (i < 30) {
+            labelsJson.append(",");
+            earningsJson.append(",");
+        }
+    }
+    labelsJson.append("]");
+    earningsJson.append("]");
+
+    // Prepare calendar events
+    StringBuilder eventsJson = new StringBuilder("[");
+    for (int i = 0; i < bookings.size(); i++) {
+        Booking booking = bookings.get(i);
+        eventsJson.append("{")
+                .append("\"title\":\"").append(booking.getBookingNumber()).append("\",")
+                .append("\"start\":\"").append(booking.getHireDate()).append("\",")
+                .append("\"allDay\":true,")
+                .append("\"backgroundColor\":\"#FCC603\",")
+                .append("\"borderColor\":\"#CC9F02\",")
+                .append("\"textColor\":\"#1A1A1A\"")
+                .append("}");
+        if (i < bookings.size() - 1) {
+            eventsJson.append(",");
+        }
+    }
+    eventsJson.append("]");
+%>
 <!-- Navbar -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/95 backdrop-blur-lg z-50 shadow-md">
     <div class="container mx-auto px-6 py-4">
@@ -132,25 +223,25 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-12 animate-slide-up">
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Total Cars</p>
-                <p id="totalCars" class="text-3xl font-bold text-white">0</p>
+                <p id="totalCars" class="text-3xl font-bold text-white"><%= totalCars >= 0 ? totalCars : "Error" %></p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Total Drivers</p>
-                <p id="totalDrivers" class="text-3xl font-bold text-white">0</p>
+                <p id="totalDrivers" class="text-3xl font-bold text-white"><%= totalDrivers >= 0 ? totalDrivers : "Error" %></p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Active Bookings</p>
-                <p id="activeBookings" class="text-3xl font-bold text-white">0</p>
+                <p id="activeBookings" class="text-3xl font-bold text-white"><%= activeBookings >= 0 ? activeBookings : "Error" %></p>
             </div>
             <div class="overview-card rounded-xl p-6">
                 <p class="text-sm text-light/70 mb-2">Total Revenue</p>
-                <p id="totalRevenue" class="text-3xl font-bold text-white">Rs. 0</p>
-                <p id="systemProfit" class="text-sm text-light/70 mt-1">System Profit: Rs. 0</p>
+                <p id="totalRevenue" class="text-3xl font-bold text-white"><%= totalRevenue >= 0 ? "Rs. " + df.format(totalRevenue) : "Error" %></p>
+                <p id="systemProfit" class="text-sm text-light/70 mt-1"><%= systemProfit >= 0 ? "Profit: Rs. " + df.format(systemProfit) : "Profit: Error" %></p>
             </div>
         </div>
 
         <!-- Cards Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             <a href="${pageContext.request.contextPath}/views/admin/manageCars.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="car" class="w-12 h-12 text-primary mb-4"></i>
@@ -163,10 +254,16 @@
                     <h2 class="text-xl font-semibold text-white">Manage Drivers</h2>
                 </div>
             </a>
-            <a href="#" class="card p-8 animate-slide-up">
+            <a href="${pageContext.request.contextPath}/views/admin/reports.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="bar-chart" class="w-12 h-12 text-primary mb-4"></i>
                     <h2 class="text-xl font-semibold text-white">View Reports</h2>
+                </div>
+            </a>
+            <a href="${pageContext.request.contextPath}/views/admin/admin-help.jsp" class="card p-8 animate-slide-up">
+                <div class="flex flex-col items-center text-center">
+                    <i data-lucide="circle-help" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">Help</h2>
                 </div>
             </a>
         </div>
@@ -263,359 +360,68 @@
             });
     }
 
-    // Fetch and update Dashboard Overview
-    function fetchDashboardStats() {
-        // Fetch Total Cars
-        fetch('<%= request.getContextPath() %>/admin/vehicles/count', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Total cars response:', JSON.stringify(data, null, 2));
-                if (data.status === 'success') {
-                    document.getElementById('totalCars').textContent = data.data;
-                } else {
-                    console.error('Total cars API error:', data.data || data.message || 'No error message provided');
-                    document.getElementById('totalCars').textContent = 'Error';
-                    Toastify({
-                        text: "Failed to load total cars: " + (data.data || data.message || 'Unknown error'),
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" }
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching total cars:', error);
-                document.getElementById('totalCars').textContent = 'Error';
-                Toastify({
-                    text: "Error fetching total cars: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" }
-                }).showToast();
-            })
-            .then(() => {
-                // Fetch Total Drivers
-                fetch('<%= request.getContextPath() %>/admin/drivers/count', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                })
-                    .then(response => {
-                        if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Total drivers response:', JSON.stringify(data, null, 2));
-                        if (data.status === 'success') {
-                            document.getElementById('totalDrivers').textContent = data.data;
-                        } else {
-                            console.error('Total drivers API error:', data.data || data.message || 'No error message provided');
-                            document.getElementById('totalDrivers').textContent = 'Error';
-                            Toastify({
-                                text: "Failed to load total drivers: " + (data.data || data.message || 'Unknown error'),
-                                duration: 3000,
-                                close: true,
-                                gravity: "top",
-                                position: "right",
-                                style: { background: "red" }
-                            }).showToast();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching total drivers:', error);
-                        document.getElementById('totalDrivers').textContent = 'Error';
-                        Toastify({
-                            text: "Error fetching total drivers: " + error.message,
-                            duration: 3000,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "red" }
-                        }).showToast();
-                    })
-                    .then(() => {
-                        // Fetch Payments for Total Revenue
-                        fetch('<%= request.getContextPath() %>/admin/payments/history', {
-                            method: 'GET',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include'
-                        })
-                            .then(response => {
-                                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                                return response.json();
-                            })
-                            .then(data => {
-                                console.log('Payment history response:', JSON.stringify(data, null, 2));
-                                if (data.status === 'success' && Array.isArray(data.data)) {
-                                    const payments = data.data;
-                                    const totalRevenue = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) / 0.7;
-                                    const systemProfit = totalRevenue * 0.3;
-                                    console.log('Total Revenue:', totalRevenue, 'System Profit:', systemProfit);
-                                    document.getElementById('totalRevenue').textContent = "Rs. "+totalRevenue.toFixed(2);
-                                    document.getElementById('systemProfit').textContent = "Profit: Rs. "+systemProfit.toFixed(2);
-                                } else {
-                                    console.error('Payment history API error:', data.data || data.message || 'No error message provided');
-                                    document.getElementById('totalRevenue').textContent = 'Error';
-                                    document.getElementById('systemProfit').textContent = 'System Profit: Error';
-                                    Toastify({
-                                        text: "Failed to load revenue: " + (data.data || data.message || 'Unknown error'),
-                                        duration: 3000,
-                                        close: true,
-                                        gravity: "top",
-                                        position: "right",
-                                        style: { background: "red" }
-                                    }).showToast();
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error fetching payment history:', error);
-                                document.getElementById('totalRevenue').textContent = 'Error';
-                                document.getElementById('systemProfit').textContent = 'System Profit: Error';
-                                Toastify({
-                                    text: "Error fetching revenue: " + error.message,
-                                    duration: 3000,
-                                    close: true,
-                                    gravity: "top",
-                                    position: "right",
-                                    style: { background: "red" }
-                                }).showToast();
-                            })
-                            .then(() => {
-                                // Fetch Bookings for Active Bookings
-                                fetch('<%= request.getContextPath() %>/admin/bookings', {
-                                    method: 'GET',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    credentials: 'include'
-                                })
-                                    .then(response => {
-                                        if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                                        return response.json();
-                                    })
-                                    .then(data => {
-                                        console.log('Bookings response for overview:', JSON.stringify(data, null, 2));
-                                        if (data.status === 'success' && Array.isArray(data.data)) {
-                                            const bookings = data.data;
-                                            const activeCount = bookings.filter(booking => booking.bookingStatus === 'confirmed').length;
-                                            console.log('Active Bookings Count:', activeCount);
-                                            document.getElementById('activeBookings').textContent = activeCount;
-                                        } else {
-                                            console.error('Bookings API error for overview:', data.data || data.message || 'No error message provided');
-                                            document.getElementById('activeBookings').textContent = 'Error';
-                                            Toastify({
-                                                text: "Failed to load active bookings: " + (data.data || data.message || 'Unknown error'),
-                                                duration: 3000,
-                                                close: true,
-                                                gravity: "top",
-                                                position: "right",
-                                                style: { background: "red" }
-                                            }).showToast();
-                                        }
-                                    })
-                                    .catch(error => {
-                                        console.error('Error fetching bookings for overview:', error);
-                                        document.getElementById('activeBookings').textContent = 'Error';
-                                        Toastify({
-                                            text: "Error fetching active bookings: " + error.message,
-                                            duration: 3000,
-                                            close: true,
-                                            gravity: "top",
-                                            position: "right",
-                                            style: { background: "red" }
-                                        }).showToast();
-                                    });
-                            });
-                    });
-            });
-    }
-
-    // Fetch and populate Performance Chart (Last 30 Days)
-    function fetchEarningsData() {
-        fetch('<%= request.getContextPath() %>/admin/payments/history', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Payment history response for chart:', JSON.stringify(data, null, 2));
-                if (data.status === 'success' && Array.isArray(data.data)) {
-                    const payments = data.data;
-                    const now = new Date();
-                    const thirtyDaysAgo = new Date(now);
-                    thirtyDaysAgo.setDate(now.getDate() - 30);
-
-                    const dailyEarnings = {};
-                    payments.forEach(payment => {
-                        const paymentDate = new Date(payment.paymentDate);
-                        if (paymentDate >= thirtyDaysAgo && paymentDate <= now) {
-                            const dateKey = paymentDate.toISOString().split('T')[0];
-                            dailyEarnings[dateKey] = (dailyEarnings[dateKey] || 0) + (payment.amount || 0) / 0.7;
-                        }
-                    });
-
-                    const labels = [];
-                    const earnings = [];
-                    for (let i = 0; i <= 30; i++) {
-                        const date = new Date(now);
-                        date.setDate(now.getDate() - i);
-                        const dateKey = date.toISOString().split('T')[0];
-                        labels.push(date.toLocaleDateString('default', { day: 'numeric', month: 'short' }));
-                        earnings.push(dailyEarnings[dateKey] || 0);
-                    }
-
-                    labels.reverse();
-                    earnings.reverse();
-
-                    console.log('Chart labels:', labels);
-                    console.log('Chart earnings:', earnings);
-
-                    const ctx = document.getElementById('performanceChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Revenue (Last 30 Days)',
-                                data: earnings,
-                                borderColor: '#FCC603',
-                                backgroundColor: 'rgba(252, 198, 3, 0.2)',
-                                fill: true,
-                                tension: 0.4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                                    ticks: { color: '#F5F5F5' }
-                                },
-                                x: {
-                                    grid: { display: false },
-                                    ticks: { color: '#F5F5F5', maxRotation: 45, minRotation: 45 }
-                                }
-                            },
-                            plugins: {
-                                legend: { labels: { color: '#F5F5F5' } }
-                            }
-                        }
-                    });
-                } else {
-                    console.error('Payment history API error for chart:', data.data || data.message || 'No error message');
-                    Toastify({
-                        text: "Failed to load revenue data: " + (data.data || data.message || 'Unknown error'),
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" }
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching payment history for chart:', error);
-                Toastify({
-                    text: "Error fetching revenue data: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" }
-                }).showToast();
-            });
-    }
-
-    // Fetch and populate Calendar
-    function fetchBookingData() {
-        fetch('<%= request.getContextPath() %>/admin/bookings', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok: ' + response.statusText);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Bookings response for calendar:', JSON.stringify(data, null, 2));
-                if (data.status === 'success' && Array.isArray(data.data)) {
-                    const bookings = data.data;
-                    const events = bookings.map(booking => ({
-                        title: booking.bookingNumber,
-                        start: booking.hireDate,
-                        allDay: true,
-                        backgroundColor: '#FCC603',
-                        borderColor: '#CC9F02',
-                        textColor: '#1A1A1A'
-                    }));
-
-                    console.log('Calendar events:', events);
-
-                    const calendarEl = document.getElementById('calendar');
-                    const calendar = new FullCalendar.Calendar(calendarEl, {
-                        initialView: 'dayGridMonth',
-                        height: 'auto',
-                        events: events,
-                        headerToolbar: {
-                            left: 'prev,next',
-                            center: 'title',
-                            right: 'today'
-                        },
-                        themeSystem: 'standard',
-                        dayMaxEvents: true,
-                        eventClick: function(info) {
-                            alert('Booking ID: ' + info.event.title);
-                        },
-                        eventContent: function(arg) {
-                            return { html: '<div>' + arg.event.title + '</div>' };
-                        }
-                    });
-                    calendar.render();
-                } else {
-                    console.error('Bookings API error for calendar:', data.data || data.message || 'No error message provided');
-                    Toastify({
-                        text: "Failed to load bookings: " + (data.data || data.message || 'Unknown error'),
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" }
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching bookings for calendar:', error);
-                Toastify({
-                    text: "Error fetching bookings: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" }
-                }).showToast();
-            });
-    }
-
-    // Initialize on page load
+    // Initialize Chart and Calendar with server-side data
     document.addEventListener('DOMContentLoaded', function () {
-        fetchDashboardStats();
-        fetchEarningsData();
-        fetchBookingData();
+        // Performance Chart
+        const labels = <%= labelsJson.toString() %>;
+        const earnings = <%= earningsJson.toString() %>;
+
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenue (Last 30 Days)',
+                    data: earnings,
+                    borderColor: '#FCC603',
+                    backgroundColor: 'rgba(252, 198, 3, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#F5F5F5' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#F5F5F5', maxRotation: 45, minRotation: 45 }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#F5F5F5' } }
+                }
+            }
+        });
+
+        // Calendar
+        const events = <%= eventsJson.toString() %>;
+
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            events: events,
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: 'today'
+            },
+            themeSystem: 'standard',
+            dayMaxEvents: true,
+            eventClick: function(info) {
+                alert('Booking ID: ' + info.event.title);
+            },
+            eventContent: function(arg) {
+                return { html: '<div>' + arg.event.title + '</div>' };
+            }
+        });
+        calendar.render();
     });
 </script>
 

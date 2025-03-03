@@ -1,4 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.UserDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.User" %>
+<%@ page import="com.cabservice.megacitycabservice.util.PasswordUtil" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,6 +76,57 @@
     </style>
 </head>
 <body class="bg-dark text-white min-h-screen flex flex-col">
+<%
+    String email = request.getParameter("email");
+    String password = request.getParameter("password");
+    String errorMessage = null;
+
+    if (email != null && password != null) {
+        UserDAO userDAO = new UserDAO();
+        try {
+            User user = userDAO.getUserByEmail(email);
+            if (user != null && PasswordUtil.checkPassword(password, user.getPassword())) {
+                // Invalidate old session if exists
+                if (session != null) {
+                    session.invalidate();
+                }
+                session = request.getSession(true);
+                session.setAttribute("sessionId", UUID.randomUUID().toString());
+                session.setAttribute("userId", user.getId());
+                session.setAttribute("userName", user.getName());
+                session.setAttribute("userEmail", user.getEmail());
+                session.setAttribute("role", user.getRole());
+                session.setMaxInactiveInterval(30 * 60);
+
+                // Set session cookie
+                Cookie sessionCookie = new Cookie("sessionId", session.getId());
+                sessionCookie.setHttpOnly(true);
+                sessionCookie.setSecure(true);
+                sessionCookie.setPath("/");
+                sessionCookie.setMaxAge(30 * 60);
+                response.addCookie(sessionCookie);
+
+                String redirectURL;
+                if ("admin".equals(user.getRole())) {
+                    redirectURL = request.getContextPath() + "/views/admin/dashboard.jsp";
+                } else if ("driver".equals(user.getRole())) {
+                    redirectURL = request.getContextPath() + "/views/driver/dashboard.jsp";
+                } else if ("customer".equals(user.getRole())) {
+                    redirectURL = request.getContextPath() + "/views/customer/dashboard.jsp";
+                } else {
+                    redirectURL = request.getContextPath() + "/index.jsp";
+                }
+                response.sendRedirect(redirectURL);
+                return;
+            } else {
+                errorMessage = "Invalid email or password.";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            errorMessage = "An internal server error occurred.";
+        }
+    }
+%>
 
 <!-- Navbar (Unchanged) -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/95 backdrop-blur-lg z-50 shadow-md">
@@ -100,12 +155,12 @@
 <div class="flex-1 flex items-center justify-center px-6 py-28">
     <div class="login-container p-8 rounded-xl shadow-2xl w-full max-w-md animate-slide-up">
         <h2 class="text-3xl font-bold text-white mb-8 text-center">Login</h2>
-        <form onsubmit="loginUser(event)">
+        <form method="post" action="<%= request.getContextPath() %>/views/auth/login.jsp">
             <div class="mb-6">
                 <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
                 <input type="email" id="email" name="email"
                        class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
-                       required>
+                       value="<%= email != null ? email : "" %>" required>
             </div>
             <div class="mb-8">
                 <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
@@ -156,83 +211,11 @@
 <script>
     lucide.createIcons();
 
-    function loginUser(event) {
-        event.preventDefault();
-
-        // Show loading spinner, hide button text
-        const button = document.getElementById('loginButton');
-        const buttonText = document.getElementById('buttonText');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        button.disabled = true; // Disable button to prevent multiple clicks
-        buttonText.classList.add('hidden');
-        loadingSpinner.classList.remove('hidden');
-
-        let email = document.getElementById("email").value;
-        let password = document.getElementById("password").value;
-
-        fetch("${pageContext.request.contextPath}/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
-        })
-            .then(response => response.json())
-            .then(data => {
-                // Reset button state
-                button.disabled = false;
-                buttonText.classList.remove('hidden');
-                loadingSpinner.classList.add('hidden');
-
-                if (data.status === "success") {
-                    // Redirect based on role without toast
-                    let redirectURL = "";
-                    if (data.role === "admin") {
-                        redirectURL = "../admin/dashboard.jsp";
-                    } else if (data.role === "driver") {
-                        redirectURL = "../driver/dashboard.jsp";
-                    } else if (data.role === "customer") {
-                        redirectURL = "../customer/dashboard.jsp";
-                    } else {
-                        redirectURL = "../index.jsp";
-                    }
-                    window.location.href = redirectURL; // Immediate redirect
-                } else {
-                    // Show error toast
-                    Toastify({
-                        text: "Login Failed: " + data.message,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                // Reset button state on error
-                button.disabled = false;
-                buttonText.classList.remove('hidden');
-                loadingSpinner.classList.add('hidden');
-
-                console.error("Fetch Error:", error);
-                Toastify({
-                    text: "Something went wrong.",
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
-    }
-
     window.onload = function () {
         lucide.createIcons();
 
-        var toastMessage = '<%= session.getAttribute("toastMessage") != null ? session.getAttribute("toastMessage") : "" %>';
-        var toastType = '<%= session.getAttribute("toastType") != null ? session.getAttribute("toastType") : "" %>';
-        var redirectURL = '<%= session.getAttribute("redirectURL") != null ? session.getAttribute("redirectURL") : "" %>';
+        var toastMessage = '<%= errorMessage != null ? errorMessage : "" %>';
+        var toastType = '<%= errorMessage != null ? "error" : "" %>';
 
         if (toastMessage.trim() !== "") {
             Toastify({
@@ -244,15 +227,7 @@
                 style: { background: toastType.trim().toLowerCase() === "success" ? "green" : "red" },
                 stopOnFocus: true
             }).showToast();
-
-            if (toastType.trim().toLowerCase() === "success" && redirectURL.trim() !== "") {
-                setTimeout(() => window.location.href = redirectURL, 3500);
-            }
         }
-
-        <% session.removeAttribute("toastMessage"); %>
-        <% session.removeAttribute("toastType"); %>
-        <% session.removeAttribute("redirectURL"); %>
     };
 </script>
 

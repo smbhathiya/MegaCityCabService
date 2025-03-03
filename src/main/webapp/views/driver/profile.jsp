@@ -1,5 +1,84 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.UUID" %>
+<%@ page import="com.cabservice.megacitycabservice.dao.DriverDAO" %>
+<%@ page import="com.cabservice.megacitycabservice.model.Driver" %>
+<%@ page import="com.cabservice.megacitycabservice.util.PasswordUtil" %>
+<%@ page import="java.time.LocalDateTime" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%
+    UUID driverUUID = (UUID) session.getAttribute("userId");
+    String driverId = driverUUID != null ? driverUUID.toString() : null;
+    String role = (String) session.getAttribute("role");
+    if (driverId == null || !"driver".equals(role)) {
+        response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+        return;
+    }
+
+    DriverDAO driverDAO = new DriverDAO();
+    Driver driver = null;
+    String errorMessage = null;
+    String successMessage = null;
+    String toastType = null;
+
+    // Fetch driver data on page load
+    try {
+        driver = driverDAO.getDriverById(driverUUID);
+        if (driver == null) {
+            errorMessage = "Driver not found.";
+        }
+    } catch (Exception e) {
+        errorMessage = "Error fetching driver data: " + e.getMessage();
+    }
+
+    // Handle profile update
+    String action = request.getParameter("action");
+    if ("updateProfile".equals(action)) {
+        String name = request.getParameter("name");
+        String email = request.getParameter("email");
+        String licenseNumber = request.getParameter("licenseNumber");
+        try {
+            boolean updated = driverDAO.updateDriver(driverUUID, name, email, licenseNumber);
+            if (updated) {
+                successMessage = "Profile updated successfully!";
+                toastType = "success";
+                driver = driverDAO.getDriverById(driverUUID); // Refresh driver data
+            } else {
+                errorMessage = "Failed to update profile.";
+                toastType = "error";
+            }
+        } catch (Exception e) {
+            errorMessage = "Error updating profile: " + e.getMessage();
+            toastType = "error";
+        }
+    }
+
+    // Handle password update
+    if ("updatePassword".equals(action)) {
+        String oldPassword = request.getParameter("oldPassword");
+        String newPassword = request.getParameter("newPassword");
+        try {
+            String currentPasswordHash = driverDAO.getPasswordHashById(driverUUID);
+            if (currentPasswordHash != null && PasswordUtil.verifyPassword(oldPassword, currentPasswordHash)) {
+                String newPasswordHash = PasswordUtil.hashPassword(newPassword);
+                boolean updated = driverDAO.updateDriverPassword(driverUUID, newPasswordHash);
+                if (updated) {
+                    successMessage = "Password updated successfully!";
+                    toastType = "success";
+                } else {
+                    errorMessage = "Failed to update password.";
+                    toastType = "error";
+                }
+            } else {
+                errorMessage = "Old password is incorrect.";
+                toastType = "error";
+            }
+        } catch (Exception e) {
+            errorMessage = "Error updating password: " + e.getMessage();
+            toastType = "error";
+        }
+    }
+%>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -60,11 +139,11 @@
         .card div {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center icons and text horizontally */
-            justify-content: center; /* Center vertically */
+            align-items: center;
+            justify-content: center;
             text-decoration: none;
             color: inherit;
-            height: 100%; /* Ensure content takes full card height */
+            height: 100%;
         }
         .editable {
             background-color: rgba(255, 255, 255, 0.1);
@@ -94,8 +173,8 @@
         }
         .cards-container {
             display: flex;
-            justify-content: flex-start; /* Align cards to the left */
-            max-width: 2xl; /* Maintain max width */
+            justify-content: flex-start;
+            max-width: 1200px;
         }
     </style>
 </head>
@@ -134,11 +213,6 @@
 
 <!-- Main Content -->
 <div class="container mx-auto px-4 py-16 min-h-screen flex items-center">
-    <%
-        UUID driverUUID = (UUID) session.getAttribute("userId");
-        String driverId = driverUUID != null ? driverUUID.toString() : null;
-        if (driverId != null) {
-    %>
     <div class="cards-container w-full">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
             <!-- Update Profile Card -->
@@ -158,15 +232,6 @@
             </div>
         </div>
     </div>
-    <%
-        } else {
-            Object userIdObj = session.getAttribute("userId");
-            if (userIdObj == null || !(userIdObj instanceof UUID)) {
-                response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
-                return;
-            }
-        }
-    %>
 </div>
 
 <!-- Footer -->
@@ -208,18 +273,19 @@
 <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="modal-content p-6 rounded-xl shadow-2xl max-w-md w-full">
         <h3 class="text-xl font-bold text-white mb-4">Update Profile</h3>
-        <form id="profileForm">
+        <form method="post" action="<%= request.getContextPath() %>/views/driver/profile.jsp">
+            <input type="hidden" name="action" value="updateProfile">
             <div class="mb-4">
                 <label for="name" class="block text-sm font-medium text-light">Name</label>
-                <input type="text" id="name" name="name" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
+                <input type="text" id="name" name="name" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" value="<%= driver != null && driver.getName() != null ? driver.getName() : "" %>" disabled required>
             </div>
             <div class="mb-4">
                 <label for="email" class="block text-sm font-medium text-light">Email</label>
-                <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
+                <input type="email" id="email" name="email" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" value="<%= driver != null && driver.getEmail() != null ? driver.getEmail() : "" %>" disabled required>
             </div>
             <div class="mb-4">
                 <label for="licenseNumber" class="block text-sm font-medium text-light">License Number</label>
-                <input type="text" id="licenseNumber" name="licenseNumber" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" disabled>
+                <input type="text" id="licenseNumber" name="licenseNumber" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light editable" value="<%= driver != null && driver.getLicenseNumber() != null ? driver.getLicenseNumber() : "" %>" disabled required>
             </div>
             <div class="flex gap-4">
                 <button type="button" id="editButton" class="w-full bg-red-700 text-white p-2 rounded-md hover:bg-red-500 transition btn-primary">Edit</button>
@@ -234,7 +300,8 @@
 <div id="passwordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="modal-content p-6 rounded-xl shadow-2xl max-w-md w-full">
         <h3 class="text-lg font-bold text-white mb-4">Change Password</h3>
-        <form id="passwordForm">
+        <form method="post" action="<%= request.getContextPath() %>/views/driver/profile.jsp">
+            <input type="hidden" name="action" value="updatePassword">
             <div class="mb-4">
                 <label for="oldPassword" class="block text-sm font-medium text-light">Previous Password</label>
                 <input type="password" id="oldPassword" name="oldPassword" required class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light">
@@ -252,21 +319,20 @@
 </div>
 
 <script>
-    // Initialize Lucide Icons
     lucide.createIcons();
 
-    // Toggle Profile Dropdown
     function toggleProfileDropdown() {
         document.getElementById('profileDropdown').classList.toggle('hidden');
     }
 
-    // Show/hide logout confirmation modal
     function showLogoutModal() {
         document.getElementById('logoutModal').classList.remove('hidden');
     }
+
     function cancelLogout() {
         document.getElementById('logoutModal').classList.add('hidden');
     }
+
     function confirmLogout() {
         fetch('<%= request.getContextPath() %>/logout', {
             method: 'POST',
@@ -302,49 +368,10 @@
             });
     }
 
-    // Fetch driver data
-    function fetchDriverData() {
-        fetch('${pageContext.request.contextPath}/driver?id=' + '<%= driverId %>', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status !== "error") {
-                    document.getElementById('name').value = data.name || '';
-                    document.getElementById('email').value = data.email || '';
-                    document.getElementById('licenseNumber').value = data.licenseNumber || '';
-                } else {
-                    Toastify({
-                        text: "Failed to fetch driver data: " + data.message,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching driver data:', error);
-                Toastify({
-                    text: "Error fetching driver data.",
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
-    }
-
-    // Show/hide profile update modal
     function showProfileModal() {
         document.getElementById('profileModal').classList.remove('hidden');
-        fetchDriverData(); // Refresh data when modal opens
     }
+
     function closeProfileModal() {
         document.getElementById('profileModal').classList.add('hidden');
         let editables = document.querySelectorAll('.editable');
@@ -356,16 +383,15 @@
         document.getElementById('updateButton').classList.add('hidden');
     }
 
-    // Show/hide password change modal
     function showPasswordModal() {
         document.getElementById('passwordModal').classList.remove('hidden');
     }
+
     function closePasswordModal() {
         document.getElementById('passwordModal').classList.add('hidden');
         document.getElementById('passwordForm').reset();
     }
 
-    // DOM Content Loaded Event Listener
     document.addEventListener("DOMContentLoaded", function () {
         // Edit button click handler
         document.getElementById('editButton').addEventListener('click', function () {
@@ -378,114 +404,29 @@
             document.getElementById('updateButton').classList.remove('hidden');
         });
 
-        // Profile form submission handler
-        document.getElementById('profileForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            let jsonObject = {
-                id: '<%= driverId %>',
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                licenseNumber: document.getElementById('licenseNumber').value
-            };
-
-            fetch('${pageContext.request.contextPath}/driver', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(jsonObject)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        Toastify({
-                            text: "Profile updated successfully!",
-                            duration: 1500,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "green" },
-                            stopOnFocus: true
-                        }).showToast();
-                        closeProfileModal();
-                    } else {
-                        Toastify({
-                            text: "Update failed: " + data.message,
-                            duration: 3000,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "red" },
-                            stopOnFocus: true
-                        }).showToast();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating profile:', error);
-                    Toastify({
-                        text: "Something went wrong. Please try again.",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                });
-        });
-
-        // Password form submission handler
-        document.getElementById('passwordForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            let passwordData = {
-                id: '<%= driverId %>',
-                oldPassword: document.getElementById('oldPassword').value,
-                newPassword: document.getElementById('newPassword').value
-            };
-
-            fetch('${pageContext.request.contextPath}/driver/password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(passwordData)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        Toastify({
-                            text: "Password updated successfully!",
-                            duration: 1500,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "green" },
-                            stopOnFocus: true
-                        }).showToast();
-                        closePasswordModal();
-                    } else {
-                        Toastify({
-                            text: "Password update failed: " + data.message,
-                            duration: 3000,
-                            close: true,
-                            gravity: "top",
-                            position: "right",
-                            style: { background: "red" },
-                            stopOnFocus: true
-                        }).showToast();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating password:', error);
-                    Toastify({
-                        text: "Something went wrong. Please try again.",
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                });
-        });
+        // Display toast messages if set
+        <% if (errorMessage != null) { %>
+        Toastify({
+            text: "<%= errorMessage %>",
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: { background: "red" },
+            stopOnFocus: true
+        }).showToast();
+        <% } else if (successMessage != null) { %>
+        Toastify({
+            text: "<%= successMessage %>",
+            duration: 1500,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: { background: "green" },
+            stopOnFocus: true,
+            onClick: function() { closeProfileModal(); }
+        }).showToast();
+        <% } %>
     });
 </script>
 

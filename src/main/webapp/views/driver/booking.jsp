@@ -94,6 +94,59 @@
     </style>
 </head>
 <body class="bg-dark text-light">
+<%
+    UUID driverUUID = (UUID) session.getAttribute("userId");
+    String driverId = driverUUID != null ? driverUUID.toString() : null;
+    BookingDAO bookingDAO = new BookingDAO();
+    List<Booking> bookings = null;
+    Booking selectedBooking = null;
+    String errorMessage = null;
+
+    if (driverId == null) {
+        response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
+        return;
+    }
+
+    // Fetch all bookings for the driver
+    try {
+        bookings = bookingDAO.getBookingsByDriverId(UUID.fromString(driverId));
+    } catch (Exception e) {
+        errorMessage = "Error fetching bookings: " + e.getMessage();
+    }
+
+    // Handle status update
+    String action = request.getParameter("action");
+    if ("updateStatus".equals(action)) {
+        String bookingId = request.getParameter("bookingId");
+        String newStatus = request.getParameter("status");
+        if (bookingId != null && newStatus != null) {
+            try {
+                UUID id = UUID.fromString(bookingId);
+                boolean updated = bookingDAO.updateBookingStatus(id, newStatus);
+                if (updated) {
+                    session.setAttribute("toastMessage", "Booking status updated successfully!");
+                    session.setAttribute("toastType", "success");
+                    response.sendRedirect(request.getContextPath() + "/views/driver/booking.jsp");
+                    return;
+                } else {
+                    errorMessage = "Failed to update booking status.";
+                }
+            } catch (Exception e) {
+                errorMessage = "Error updating booking status: " + e.getMessage();
+            }
+        }
+    }
+
+    // Fetch selected booking details if bookingId is provided
+    String bookingId = request.getParameter("bookingId");
+    if (bookingId != null && !"updateStatus".equals(action)) {
+        try {
+            selectedBooking = bookingDAO.getBookingById(UUID.fromString(bookingId));
+        } catch (Exception e) {
+            errorMessage = "Error fetching booking details: " + e.getMessage();
+        }
+    }
+%>
 
 <!-- Navbar -->
 <nav class="fixed top-0 left-0 right-0 bg-dark/90 backdrop-blur-md z-50">
@@ -128,17 +181,6 @@
 
 <!-- Main Content -->
 <div class="container mx-auto px-4 main-content min-h-screen">
-    <%
-        UUID driverUUID = (UUID) session.getAttribute("userId");
-        String driverId = driverUUID != null ? driverUUID.toString() : null;
-        if (driverId != null) {
-            BookingDAO bookingDAO = new BookingDAO();
-            List<Booking> bookings = null;
-            try {
-                bookings = bookingDAO.getBookingsByDriverId(UUID.fromString(driverId));
-            } catch (Exception e) {
-            }
-    %>
     <h2 class="text-3xl font-bold text-white mb-8">Booking Management</h2>
 
     <!-- Pending and Ongoing Bookings -->
@@ -167,8 +209,10 @@
                 <td><%= booking.getHireDate() %></td>
                 <td><%= booking.getBookingStatus() %></td>
                 <td>
-                    <button class="bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-700 btn-primary"
-                            onclick='showBookingDetails("<%= booking.getId() %>")'>View</button>
+                    <form method="get" action="<%= request.getContextPath() %>/views/driver/booking.jsp" style="display:inline;">
+                        <input type="hidden" name="bookingId" value="<%= booking.getId() %>">
+                        <button type="submit" class="bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-700 btn-primary">View</button>
+                    </form>
                 </td>
             </tr>
             <%      }
@@ -208,8 +252,10 @@
                 <td><%= booking.getHireDate() %></td>
                 <td><%= booking.getBookingStatus() %></td>
                 <td>
-                    <button class="bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-700 btn-primary"
-                            onclick='showBookingDetails("<%= booking.getId() %>")'>View</button>
+                    <form method="get" action="<%= request.getContextPath() %>/views/driver/booking.jsp" style="display:inline;">
+                        <input type="hidden" name="bookingId" value="<%= booking.getId() %>">
+                        <button type="submit" class="bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-700 btn-primary">View</button>
+                    </form>
                 </td>
             </tr>
             <%      }
@@ -222,12 +268,6 @@
             </tbody>
         </table>
     </div>
-    <%
-        } else {
-            response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
-            return;
-        }
-    %>
 </div>
 
 <!-- Footer -->
@@ -266,18 +306,18 @@
 </div>
 
 <!-- Booking Details Modal -->
-<div id="bookingDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+<div id="bookingDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center <%= selectedBooking != null ? "" : "hidden" %>">
     <div class="modal-content p-6 rounded-xl shadow-2xl max-w-md w-full">
         <h3 class="text-xl font-bold text-white mb-4">Booking Details</h3>
         <div class="text-gray-300 mb-6">
-            <p><strong>Booking Number:</strong> <span id="modalBookingNumber"></span></p>
-            <p><strong>Pickup Location:</strong> <span id="modalPickupLocation"></span></p>
-            <p><strong>Drop-off Location:</strong> <span id="modalDropoffLocation"></span></p>
-            <p><strong>Hire Date:</strong> <span id="modalHireDate"></span></p>
-            <p><strong>Hire Time:</strong> <span id="modalHireTime"></span></p>
-            <p><strong>Status:</strong> <span id="modalStatus"></span></p>
-            <p><strong>Distance:</strong> <span id="modalDistance"></span></p>
-            <p><strong>Total Fare:</strong> <span id="modalTotalFare"></span></p>
+            <p><strong>Booking Number:</strong> <span id="modalBookingNumber"><%= selectedBooking != null ? (selectedBooking.getBookingNumber() != null ? selectedBooking.getBookingNumber() : "N/A") : "N/A" %></span></p>
+            <p><strong>Pickup Location:</strong> <span id="modalPickupLocation"><%= selectedBooking != null ? (selectedBooking.getPickupLocation() != null ? selectedBooking.getPickupLocation() : "N/A") : "N/A" %></span></p>
+            <p><strong>Drop-off Location:</strong> <span id="modalDropoffLocation"><%= selectedBooking != null ? (selectedBooking.getDropoffLocation() != null ? selectedBooking.getDropoffLocation() : "N/A") : "N/A" %></span></p>
+            <p><strong>Hire Date:</strong> <span id="modalHireDate"><%= selectedBooking != null ? (selectedBooking.getHireDate() != null ? selectedBooking.getHireDate() : "N/A") : "N/A" %></span></p>
+            <p><strong>Hire Time:</strong> <span id="modalHireTime"><%= selectedBooking != null ? (selectedBooking.getHireTime() != null ? selectedBooking.getHireTime() : "N/A") : "N/A" %></span></p>
+            <p><strong>Status:</strong> <span id="modalStatus"><%= selectedBooking != null ? (selectedBooking.getBookingStatus() != null ? selectedBooking.getBookingStatus() : "N/A") : "N/A" %></span></p>
+            <p><strong>Distance:</strong> <span id="modalDistance"><%= selectedBooking != null ? (selectedBooking.getDistance() != 0 ? String.format("%.2f km", selectedBooking.getDistance()) : "N/A") : "N/A" %></span></p>
+            <p><strong>Total Fare:</strong> <span id="modalTotalFare"><%= selectedBooking != null ? (selectedBooking.getTotalFare() != 0 ? String.format("Rs. %.2f", selectedBooking.getTotalFare()) : "N/A") : "N/A" %></span></p>
         </div>
         <div class="flex gap-4">
             <button id="updateStatusButton" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-700 btn-primary" onclick="showUpdateStatusModal()">Update Status</button>
@@ -290,7 +330,9 @@
 <div id="updateStatusModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="modal-content p-6 rounded-xl shadow-2xl max-w-md w-full">
         <h3 class="text-xl font-bold text-white mb-4">Update Booking Status</h3>
-        <form id="updateStatusForm">
+        <form method="post" action="<%= request.getContextPath() %>/views/driver/booking.jsp">
+            <input type="hidden" name="action" value="updateStatus">
+            <input type="hidden" name="bookingId" id="updateBookingId" value="<%= selectedBooking != null ? selectedBooking.getId() : "" %>">
             <div class="mb-4">
                 <label for="statusSelect" class="block text-sm font-medium text-light">Select Status</label>
                 <select id="statusSelect" name="status" class="mt-1 p-2 w-full bg-dark/50 rounded-md text-light border border-white/10">
@@ -356,119 +398,40 @@
             });
     }
 
-    function showBookingDetails(bookingId) {
-        fetch('<%= request.getContextPath() %>/driver/bookings/details?id=' + bookingId, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.statusText);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Booking Details Response:', data);
-                // Check if data is an object and not an error response
-                if (data && !data.status) {
-                    document.getElementById('modalBookingNumber').innerText = data.bookingNumber || 'N/A';
-                    document.getElementById('modalPickupLocation').innerText = data.pickupLocation || 'N/A';
-                    document.getElementById('modalDropoffLocation').innerText = data.dropoffLocation || 'N/A';
-                    document.getElementById('modalHireDate').innerText = data.hireDate || 'N/A';
-                    document.getElementById('modalHireTime').innerText = data.hireTime || 'N/A';
-                    document.getElementById('modalStatus').innerText = data.bookingStatus || 'N/A';
-                    document.getElementById('modalDistance').innerText = (data.distance ? data.distance.toFixed(2) + ' km' : 'N/A');
-                    document.getElementById('modalTotalFare').innerText = (data.totalFare ? 'Rs. ' + data.totalFare.toFixed(2) : 'N/A');
-                    document.getElementById('bookingDetailsModal').classList.remove('hidden');
-                    document.getElementById('updateStatusForm').dataset.bookingId = bookingId;
-                } else {
-                    Toastify({
-                        text: "Failed to fetch booking details: " + (data.message || 'Unknown error'),
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching booking details:', error);
-                Toastify({
-                    text: "Error fetching booking details: " + error.message,
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
-    }
-
     function closeBookingDetailsModal() {
         document.getElementById('bookingDetailsModal').classList.add('hidden');
+        window.location.href = '<%= request.getContextPath() %>/views/driver/booking.jsp';
     }
 
     function showUpdateStatusModal() {
         document.getElementById('updateStatusModal').classList.remove('hidden');
+        document.getElementById('updateBookingId').value = '<%= selectedBooking != null ? selectedBooking.getId() : "" %>';
     }
 
     function closeUpdateStatusModal() {
         document.getElementById('updateStatusModal').classList.add('hidden');
     }
 
-    document.getElementById('updateStatusForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const bookingId = this.dataset.bookingId;
-        const newStatus = document.getElementById('statusSelect').value;
+    // Handle toast messages from session
+    window.onload = function() {
+        var toastMessage = '<%= session.getAttribute("toastMessage") != null ? session.getAttribute("toastMessage") : "" %>';
+        var toastType = '<%= session.getAttribute("toastType") != null ? session.getAttribute("toastType") : "" %>';
 
-        fetch('<%= request.getContextPath() %>/driver/bookings/status', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: bookingId, status: newStatus })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "success") {
-                    Toastify({
-                        text: "Booking status updated successfully!",
-                        duration: 1500,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "green" },
-                        stopOnFocus: true
-                    }).showToast();
-                    closeUpdateStatusModal();
-                    closeBookingDetailsModal();
-                    window.location.reload();
-                } else {
-                    Toastify({
-                        text: "Status update failed: " + data.message,
-                        duration: 3000,
-                        close: true,
-                        gravity: "top",
-                        position: "right",
-                        style: { background: "red" },
-                        stopOnFocus: true
-                    }).showToast();
-                }
-            })
-            .catch(error => {
-                console.error('Error updating status:', error);
-                Toastify({
-                    text: "Something went wrong. Please try again.",
-                    duration: 3000,
-                    close: true,
-                    gravity: "top",
-                    position: "right",
-                    style: { background: "red" },
-                    stopOnFocus: true
-                }).showToast();
-            });
-    });
+        if (toastMessage.trim() !== "") {
+            Toastify({
+                text: toastMessage,
+                duration: 1500,
+                close: true,
+                gravity: "top",
+                position: "right",
+                style: { background: toastType.trim().toLowerCase() === "success" ? "green" : "red" },
+                stopOnFocus: true
+            }).showToast();
+        }
+
+        <% session.removeAttribute("toastMessage"); %>
+        <% session.removeAttribute("toastType"); %>
+    };
 </script>
 
 </body>
