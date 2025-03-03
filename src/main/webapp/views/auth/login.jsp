@@ -90,7 +90,6 @@
                 if (session != null) {
                     session.invalidate();
                 }
-                // Use the implicit session object and ensure a new session is created
                 session = request.getSession(true);
                 session.setAttribute("sessionId", UUID.randomUUID().toString());
                 session.setAttribute("userId", user.getId());
@@ -107,7 +106,6 @@
                 sessionCookie.setMaxAge(30 * 60);
                 response.addCookie(sessionCookie);
 
-                // Immediate redirect based on role
                 String redirectURL;
                 if ("admin".equals(user.getRole())) {
                     redirectURL = request.getContextPath() + "/views/admin/dashboard.jsp";
@@ -118,8 +116,8 @@
                 } else {
                     redirectURL = request.getContextPath() + "/index.jsp";
                 }
-                response.sendRedirect(redirectURL); // Immediate redirect
-                return; // Exit the JSP processing
+                response.sendRedirect(redirectURL);
+                return;
             } else {
                 errorMessage = "Invalid email or password.";
             }

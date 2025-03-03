@@ -108,12 +108,6 @@ public class DriverDAO {
                 driverStmt.executeUpdate();
             }
 
-//            String userSql = "UPDATE users SET is_enabled = FALSE, updated_at = ? WHERE id = (SELECT user_id FROM drivers WHERE id = ?)";
-//            try (PreparedStatement userStmt = connection.prepareStatement(userSql)) {
-//                userStmt.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
-//                userStmt.setString(2, driverId.toString());
-//                userStmt.executeUpdate();
-//            }
 
             connection.commit();
             return true;

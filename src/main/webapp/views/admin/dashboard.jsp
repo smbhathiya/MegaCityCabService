@@ -241,7 +241,7 @@
         </div>
 
         <!-- Cards Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             <a href="${pageContext.request.contextPath}/views/admin/manageCars.jsp" class="card p-8 animate-slide-up">
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="car" class="w-12 h-12 text-primary mb-4"></i>
@@ -258,6 +258,12 @@
                 <div class="flex flex-col items-center text-center">
                     <i data-lucide="bar-chart" class="w-12 h-12 text-primary mb-4"></i>
                     <h2 class="text-xl font-semibold text-white">View Reports</h2>
+                </div>
+            </a>
+            <a href="${pageContext.request.contextPath}/views/admin/admin-help.jsp" class="card p-8 animate-slide-up">
+                <div class="flex flex-col items-center text-center">
+                    <i data-lucide="circle-help" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">Help</h2>
                 </div>
             </a>
         </div>

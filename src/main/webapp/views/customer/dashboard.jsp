@@ -198,6 +198,12 @@
                     <h2 class="text-xl font-semibold text-white">Payment & Billing</h2>
                 </div>
             </a>
+            <a href="${pageContext.request.contextPath}/views/customer/customer-help.jsp" class="card p-8 animate-slide-up">
+                <div class="flex flex-col items-center text-center">
+                    <i data-lucide="circle-help" class="w-12 h-12 text-primary mb-4"></i>
+                    <h2 class="text-xl font-semibold text-white">Help</h2>
+                </div>
+            </a>
         </div>
     </div>
 

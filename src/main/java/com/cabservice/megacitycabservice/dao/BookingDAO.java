@@ -11,23 +11,6 @@ import java.util.UUID;
 
 public class BookingDAO {
 
-    // Get the next booking number
-    private String getNextBookingNumber() throws SQLException {
-        String sql = "SELECT MAX(CAST(SUBSTRING(booking_number, 5) AS UNSIGNED)) FROM bookings";
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
-            if (rs.next()) {
-                int lastBookingNumber = rs.getInt(1);
-                return "BOOK" + (lastBookingNumber + 1);
-            } else {
-                return "BOOK1001";
-            }
-        }
-    }
-
     // Add a new booking
     public boolean addBooking(Booking booking) throws SQLException {
         String sql = "INSERT INTO bookings (id, booking_number, customer_id, driver_id, car_id, pickup_location, " +
@@ -39,7 +22,7 @@ public class BookingDAO {
             stmt.setObject(1, booking.getId().toString());
             stmt.setString(2, booking.getBookingNumber());
             stmt.setObject(3, booking.getCustomerId().toString());
-            stmt.setObject(4, booking.getDriverId() != null ? booking.getDriverId().toString() : null); // Add driver_id
+            stmt.setObject(4, booking.getDriverId() != null ? booking.getDriverId().toString() : null);
             stmt.setObject(5, booking.getCarId() != null ? booking.getCarId().toString() : null);
             stmt.setString(6, booking.getPickupLocation());
             stmt.setString(7, booking.getDropoffLocation());

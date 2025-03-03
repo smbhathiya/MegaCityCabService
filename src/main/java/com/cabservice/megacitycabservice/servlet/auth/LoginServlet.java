@@ -29,7 +29,6 @@ public class LoginServlet extends HttpServlet {
     private static final Logger logger = LoggerFactory.getLogger(LoginServlet.class);
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Ensure Content-Type is JSON
         if (!"application/json".equals(request.getContentType())) {
             response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
             response.setContentType("application/json");

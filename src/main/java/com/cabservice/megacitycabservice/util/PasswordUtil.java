@@ -17,7 +17,6 @@ public class PasswordUtil {
         try {
             return BCrypt.checkpw(password, hashedPassword);
         } catch (IllegalArgumentException e) {
-            // Handle invalid hash format or null values
             return false;
         }
     }
