@@ -19,6 +19,16 @@ import java.util.UUID;
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
     private Gson gson;
+    private final UserDAO userDAO;
+    private static final Logger logger = LoggerFactory.getLogger(LoginServlet.class);
+
+    public LoginServlet() {
+        this(new UserDAO());
+    }
+
+    public LoginServlet(UserDAO userDAO) {
+        this.userDAO = userDAO;
+    }
 
     @Override
     public void init() throws ServletException {
@@ -26,9 +36,7 @@ public class LoginServlet extends HttpServlet {
         gson = new Gson();
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(LoginServlet.class);
-
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         if (!"application/json".equals(request.getContentType())) {
             response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
             response.setContentType("application/json");
@@ -47,7 +55,6 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        // Extract email and password
         String email = requestData.get("email");
         String password = requestData.get("password");
 
@@ -58,9 +65,7 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        UserDAO userDAO = new UserDAO();
         User user;
-
         try {
             user = userDAO.getUserByEmail(email);
         } catch (SQLException e) {
@@ -99,5 +104,4 @@ public class LoginServlet extends HttpServlet {
             response.getWriter().write("{\"status\":\"error\",\"message\":\"Invalid email or password.\"}");
         }
     }
-
 }
