@@ -112,6 +112,7 @@
         bookings = bookingDAO.getBookingsByDriverId(UUID.fromString(driverId));
     } catch (Exception e) {
         errorMessage = "Error fetching bookings: " + e.getMessage();
+        e.printStackTrace(); // Log to server console
     }
 
     // Handle status update
@@ -133,6 +134,7 @@
                 }
             } catch (Exception e) {
                 errorMessage = "Error updating booking status: " + e.getMessage();
+                e.printStackTrace(); // Log to server console
             }
         }
     }
@@ -142,8 +144,12 @@
     if (bookingId != null && !"updateStatus".equals(action)) {
         try {
             selectedBooking = bookingDAO.getBookingById(UUID.fromString(bookingId));
+            if (selectedBooking == null) {
+                errorMessage = "Booking not found for ID: " + bookingId;
+            }
         } catch (Exception e) {
             errorMessage = "Error fetching booking details: " + e.getMessage();
+            e.printStackTrace(); // Log to server console
         }
     }
 %>
@@ -183,6 +189,10 @@
 <div class="container mx-auto px-4 main-content min-h-screen">
     <h2 class="text-3xl font-bold text-white mb-8">Booking Management</h2>
 
+    <% if (errorMessage != null) { %>
+    <div class="bg-red-500 text-white p-4 rounded-md mb-4"><%= errorMessage %></div>
+    <% } %>
+
     <!-- Pending and Ongoing Bookings -->
     <div class="card p-6 animate-slide-up mb-8">
         <h3 class="text-2xl font-semibold text-white mb-4">Pending & Ongoing Bookings</h3>
@@ -198,16 +208,16 @@
             </tr>
             </thead>
             <tbody id="activeBookingsBody">
-            <% if (bookings != null) {
+            <% if (bookings != null && !bookings.isEmpty()) {
                 for (Booking booking : bookings) {
                     if ("pending".equalsIgnoreCase(booking.getBookingStatus()) || "confirmed".equalsIgnoreCase(booking.getBookingStatus())) {
             %>
             <tr>
-                <td><%= booking.getBookingNumber() %></td>
-                <td><%= booking.getPickupLocation() %></td>
-                <td><%= booking.getDropoffLocation() %></td>
-                <td><%= booking.getHireDate() %></td>
-                <td><%= booking.getBookingStatus() %></td>
+                <td><%= booking.getBookingNumber() != null ? booking.getBookingNumber() : "N/A" %></td>
+                <td><%= booking.getPickupLocation() != null ? booking.getPickupLocation() : "N/A" %></td>
+                <td><%= booking.getDropoffLocation() != null ? booking.getDropoffLocation() : "N/A" %></td>
+                <td><%= booking.getHireDate() != null ? booking.getHireDate() : "N/A" %></td>
+                <td><%= booking.getBookingStatus() != null ? booking.getBookingStatus() : "N/A" %></td>
                 <td>
                     <form method="get" action="<%= request.getContextPath() %>/views/driver/booking.jsp" style="display:inline;">
                         <input type="hidden" name="bookingId" value="<%= booking.getId() %>">
@@ -241,16 +251,16 @@
             </tr>
             </thead>
             <tbody id="historyBookingsBody">
-            <% if (bookings != null) {
+            <% if (bookings != null && !bookings.isEmpty()) {
                 for (Booking booking : bookings) {
                     if ("completed".equalsIgnoreCase(booking.getBookingStatus()) || "cancelled".equalsIgnoreCase(booking.getBookingStatus())) {
             %>
             <tr>
-                <td><%= booking.getBookingNumber() %></td>
-                <td><%= booking.getPickupLocation() %></td>
-                <td><%= booking.getDropoffLocation() %></td>
-                <td><%= booking.getHireDate() %></td>
-                <td><%= booking.getBookingStatus() %></td>
+                <td><%= booking.getBookingNumber() != null ? booking.getBookingNumber() : "N/A" %></td>
+                <td><%= booking.getPickupLocation() != null ? booking.getPickupLocation() : "N/A" %></td>
+                <td><%= booking.getDropoffLocation() != null ? booking.getDropoffLocation() : "N/A" %></td>
+                <td><%= booking.getHireDate() != null ? booking.getHireDate() : "N/A" %></td>
+                <td><%= booking.getBookingStatus() != null ? booking.getBookingStatus() : "N/A" %></td>
                 <td>
                     <form method="get" action="<%= request.getContextPath() %>/views/driver/booking.jsp" style="display:inline;">
                         <input type="hidden" name="bookingId" value="<%= booking.getId() %>">
@@ -311,6 +321,8 @@
         <h3 class="text-xl font-bold text-white mb-4">Booking Details</h3>
         <div class="text-gray-300 mb-6">
             <p><strong>Booking Number:</strong> <span id="modalBookingNumber"><%= selectedBooking != null ? (selectedBooking.getBookingNumber() != null ? selectedBooking.getBookingNumber() : "N/A") : "N/A" %></span></p>
+            <p><strong>Customer Name:</strong> <span id="modalCustomerName"><%= selectedBooking != null ? (selectedBooking.getCustomerName() != null ? selectedBooking.getCustomerName() : "N/A") : "N/A" %></span></p>
+            <p><strong>Contact Number:</strong> <span id="modalCustomerContact"><%= selectedBooking != null ? (selectedBooking.getCustomerContact() != null ? selectedBooking.getCustomerContact() : "N/A") : "N/A" %></span></p>
             <p><strong>Pickup Location:</strong> <span id="modalPickupLocation"><%= selectedBooking != null ? (selectedBooking.getPickupLocation() != null ? selectedBooking.getPickupLocation() : "N/A") : "N/A" %></span></p>
             <p><strong>Drop-off Location:</strong> <span id="modalDropoffLocation"><%= selectedBooking != null ? (selectedBooking.getDropoffLocation() != null ? selectedBooking.getDropoffLocation() : "N/A") : "N/A" %></span></p>
             <p><strong>Hire Date:</strong> <span id="modalHireDate"><%= selectedBooking != null ? (selectedBooking.getHireDate() != null ? selectedBooking.getHireDate() : "N/A") : "N/A" %></span></p>
@@ -412,7 +424,6 @@
         document.getElementById('updateStatusModal').classList.add('hidden');
     }
 
-    // Handle toast messages from session
     window.onload = function() {
         var toastMessage = '<%= session.getAttribute("toastMessage") != null ? session.getAttribute("toastMessage") : "" %>';
         var toastType = '<%= session.getAttribute("toastType") != null ? session.getAttribute("toastType") : "" %>';
@@ -433,6 +444,5 @@
         <% session.removeAttribute("toastType"); %>
     };
 </script>
-
 </body>
 </html>

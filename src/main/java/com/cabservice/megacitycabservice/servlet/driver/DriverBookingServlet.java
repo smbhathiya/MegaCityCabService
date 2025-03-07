@@ -17,7 +17,6 @@ import java.util.UUID;
 
 @WebServlet(urlPatterns = {"/driver/bookings", "/driver/bookings/details", "/driver/bookings/status"})
 public class DriverBookingServlet extends HttpServlet {
-
     private final Gson gson = new Gson();
     private BookingDAO bookingDAO;
 
@@ -26,7 +25,6 @@ public class DriverBookingServlet extends HttpServlet {
         bookingDAO = new BookingDAO();
     }
 
-    // Fetch all bookings for a driver (GET /driver/bookings)
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
@@ -39,7 +37,6 @@ public class DriverBookingServlet extends HttpServlet {
                 response.getWriter().write("{\"status\": \"error\", \"message\": \"Driver ID is required.\"}");
                 return;
             }
-
             try {
                 UUID id = UUID.fromString(driverId);
                 List<Booking> bookings = bookingDAO.getBookingsByDriverId(id);
@@ -59,7 +56,6 @@ public class DriverBookingServlet extends HttpServlet {
                 response.getWriter().write("{\"status\": \"error\", \"message\": \"Booking ID is required.\"}");
                 return;
             }
-
             try {
                 UUID id = UUID.fromString(bookingId);
                 Booking booking = bookingDAO.getBookingById(id);
@@ -77,7 +73,6 @@ public class DriverBookingServlet extends HttpServlet {
         }
     }
 
-    // Update booking status (PUT /driver/bookings/status)
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");

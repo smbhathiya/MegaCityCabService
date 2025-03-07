@@ -115,8 +115,8 @@ public class CustomerPaymentServlet extends HttpServlet {
         BookingDAO bookingDAO = new BookingDAO();
         PaymentDAO paymentDAO = new PaymentDAO();
         try {
-            synchronized (DBUtil.class) { // Synchronize to avoid concurrent access to singleton connection
-                Booking booking = bookingDAO.getBookingById(bookingId);
+            synchronized (DBUtil.class) {
+                Booking booking = bookingDAO.getBookingById(UUID.fromString(bookingId));
                 if (booking == null || !booking.getCustomerId().equals(customerId)) {
                     logger.warning("Invalid booking or unauthorized access: bookingId=" + bookingId);
                     response.getWriter().write(gson.toJson(new ResponseWrapper("error", "Invalid booking or unauthorized access")));
