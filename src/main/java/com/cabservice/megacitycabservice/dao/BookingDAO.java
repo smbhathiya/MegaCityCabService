@@ -38,36 +38,15 @@ public class BookingDAO {
         }
     }
 
-    // Method to cancel a booking
+    // Cancel a booking
     public boolean cancelBooking(String bookingNumber) throws SQLException {
-        String sql = "UPDATE bookings SET booking_status = 'cancelled',payment_status = 'cancelled', updated_at = NOW() WHERE booking_number = ?";
-
+        String sql = "UPDATE bookings SET booking_status = 'cancelled', payment_status = 'cancelled', updated_at = NOW() WHERE booking_number = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, bookingNumber);
-
             int rowsAffected = stmt.executeUpdate();
             return rowsAffected > 0;
-        } catch (SQLException e) {
-            throw new SQLException("Error cancelling booking: " + e.getMessage(), e);
         }
-    }
-
-    // Get booking by booking ID
-    public Booking getBookingById(String bookingId) throws SQLException {
-        String sql = "SELECT id, booking_number, customer_id, driver_id, car_id, pickup_location, dropoff_location, " +
-                "distance, booking_status, total_fare, payment_status, hire_date, hire_time, created_at, updated_at " +
-                "FROM bookings WHERE id = ?";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, bookingId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapToBooking(rs);
-                }
-            }
-        }
-        return null;
     }
 
     // Get all bookings for a customer
@@ -98,7 +77,6 @@ public class BookingDAO {
                     booking.setHireDate(rs.getString("hire_date"));
                     booking.setHireTime(rs.getString("hire_time"));
 
-                    // Car Details
                     if (rs.getString("car_id") != null) {
                         Car car = new Car();
                         car.setBrand(rs.getString("brand"));
@@ -106,7 +84,6 @@ public class BookingDAO {
                         car.setPlateNumber(rs.getString("plate_number"));
                         booking.setCarDetails(car);
                     }
-
                     bookings.add(booking);
                 }
             }
@@ -115,16 +92,38 @@ public class BookingDAO {
     }
 
     // Get all bookings for a driver
-    public List<Booking> getBookingsByDriverId(String driverId) throws SQLException {
-        String sql = "SELECT * FROM bookings WHERE driver_id = ?";
+    public List<Booking> getBookingsByDriverId(UUID driverId) throws SQLException {
+        String sql = "SELECT b.id, b.booking_number, b.pickup_location, b.dropoff_location, b.hire_date, b.booking_status, " +
+                "b.hire_time, b.distance, b.total_fare, b.customer_id, u.name AS customer_name, c.contact_no " +
+                "FROM bookings b " +
+                "LEFT JOIN customers c ON b.customer_id = c.id " +
+                "LEFT JOIN users u ON c.user_id = u.id " +
+                "WHERE b.driver_id = ?";
         List<Booking> bookings = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, driverId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    bookings.add(mapToBooking(rs));
-                }
+            stmt.setString(1, driverId.toString());
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Booking booking = new Booking(
+                        UUID.fromString(rs.getString("id")),
+                        rs.getString("booking_number"),
+                        rs.getString("customer_id") != null ? UUID.fromString(rs.getString("customer_id")) : null,
+                        driverId,
+                        null,
+                        rs.getString("pickup_location"),
+                        rs.getString("dropoff_location"),
+                        rs.getDouble("distance"),
+                        rs.getString("booking_status"),
+                        rs.getDouble("total_fare"),
+                        null,
+                        rs.getString("hire_date"),
+                        rs.getString("hire_time")
+                );
+                booking.setCustomerName(rs.getString("customer_name"));
+                booking.setCustomerContact(rs.getString("contact_no"));
+                bookings.add(booking);
             }
         }
         return bookings;
@@ -138,65 +137,22 @@ public class BookingDAO {
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                bookings.add(mapToBooking(rs));
-            }
-        }
-        return bookings;
-    }
-
-    // Map result set to Booking object
-    private Booking mapToBooking(ResultSet rs) throws SQLException {
-        Booking booking = new Booking();
-        String id = rs.getString("id");
-        if (id != null) booking.setId(UUID.fromString(id));
-        booking.setBookingNumber(rs.getString("booking_number"));
-        String customerId = rs.getString("customer_id");
-        if (customerId != null) booking.setCustomerId(UUID.fromString(customerId));
-        String driverId = rs.getString("driver_id");
-        if (driverId != null) booking.setDriverId(UUID.fromString(driverId));
-        String carId = rs.getString("car_id");
-        if (carId != null) booking.setCarId(UUID.fromString(carId));
-        booking.setPickupLocation(rs.getString("pickup_location"));
-        booking.setDropOffLocation(rs.getString("dropoff_location"));
-        booking.setDistance(rs.getDouble("distance"));
-        booking.setBookingStatus(rs.getString("booking_status"));
-        booking.setTotalFare(rs.getDouble("total_fare"));
-        booking.setPaymentStatus(rs.getString("payment_status"));
-        booking.setHireDate(rs.getString("hire_date"));
-        booking.setHireTime(rs.getString("hire_time"));
-        booking.setCreatedAt(rs.getTimestamp("created_at"));
-        booking.setUpdatedAt(rs.getTimestamp("updated_at"));
-        return booking;
-    }
-
-    // Fetch all bookings for a driver
-    public List<Booking> getBookingsByDriverId(UUID driverId) throws SQLException {
-        String sql = "SELECT id, booking_number, pickup_location, dropoff_location, hire_date, booking_status " +
-                "FROM bookings " +
-                "WHERE driver_id = ?";
-        List<Booking> bookings = new ArrayList<>();
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, driverId.toString());
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                Booking booking = new Booking(
-                        UUID.fromString(rs.getString("id")),
-                        rs.getString("booking_number"),
-                        null,
-                        driverId,
-                        null,
-                        rs.getString("pickup_location"),
-                        rs.getString("dropoff_location"),
-                        0.0,
-                        rs.getString("booking_status"),
-                        0.0,
-                        null,
-                        rs.getString("hire_date"),
-                        null
-                );
+                Booking booking = new Booking();
+                booking.setId(UUID.fromString(rs.getString("id")));
+                booking.setBookingNumber(rs.getString("booking_number"));
+                booking.setCustomerId(rs.getString("customer_id") != null ? UUID.fromString(rs.getString("customer_id")) : null);
+                booking.setDriverId(rs.getString("driver_id") != null ? UUID.fromString(rs.getString("driver_id")) : null);
+                booking.setCarId(rs.getString("car_id") != null ? UUID.fromString(rs.getString("car_id")) : null);
+                booking.setPickupLocation(rs.getString("pickup_location"));
+                booking.setDropOffLocation(rs.getString("dropoff_location"));
+                booking.setDistance(rs.getDouble("distance"));
+                booking.setBookingStatus(rs.getString("booking_status"));
+                booking.setTotalFare(rs.getDouble("total_fare"));
+                booking.setPaymentStatus(rs.getString("payment_status"));
+                booking.setHireDate(rs.getString("hire_date"));
+                booking.setHireTime(rs.getString("hire_time"));
+                booking.setCreatedAt(rs.getTimestamp("created_at"));
+                booking.setUpdatedAt(rs.getTimestamp("updated_at"));
                 bookings.add(booking);
             }
         }
@@ -205,10 +161,12 @@ public class BookingDAO {
 
     // Fetch booking details by ID
     public Booking getBookingById(UUID bookingId) throws SQLException {
-        String sql = "SELECT id, booking_number, pickup_location, dropoff_location, hire_date, hire_time, " +
-                "distance, booking_status, total_fare " +
-                "FROM bookings " +
-                "WHERE id = ?";
+        String sql = "SELECT b.id, b.booking_number, b.pickup_location, b.dropoff_location, b.hire_date, b.hire_time, " +
+                "b.distance, b.booking_status, b.total_fare, b.customer_id, u.name AS customer_name, c.contact_no " +
+                "FROM bookings b " +
+                "LEFT JOIN users u ON b.customer_id = u.id " +
+                "LEFT JOIN customers c ON b.customer_id = c.id " +
+                "WHERE b.id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -216,10 +174,10 @@ public class BookingDAO {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                return new Booking(
+                Booking booking = new Booking(
                         UUID.fromString(rs.getString("id")),
                         rs.getString("booking_number"),
-                        null,
+                        rs.getString("customer_id") != null ? UUID.fromString(rs.getString("customer_id")) : null,
                         null,
                         null,
                         rs.getString("pickup_location"),
@@ -231,6 +189,9 @@ public class BookingDAO {
                         rs.getString("hire_date"),
                         rs.getString("hire_time")
                 );
+                booking.setCustomerName(rs.getString("customer_name"));
+                booking.setCustomerContact(rs.getString("contact_no"));
+                return booking;
             }
         }
         return null;
@@ -239,12 +200,10 @@ public class BookingDAO {
     // Update booking status
     public boolean updateBookingStatus(UUID bookingId, String newStatus) throws SQLException {
         String sql = "UPDATE bookings SET booking_status = ?, updated_at = NOW() WHERE id = ?";
-
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, newStatus);
             stmt.setString(2, bookingId.toString());
-
             int rowsAffected = stmt.executeUpdate();
             return rowsAffected > 0;
         }

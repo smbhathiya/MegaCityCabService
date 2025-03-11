@@ -110,6 +110,7 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Pickup</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Drop-off</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Date</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                     </tr>
                     </thead>
                     <tbody id="confirmedBookingsTableBody"></tbody>
@@ -129,6 +130,7 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Drop-off</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Date</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-white">Status</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                     </tr>
                     </thead>
                     <tbody id="completedCancelledBookingsTableBody"></tbody>
@@ -154,6 +156,18 @@
         </div>
     </div>
 </footer>
+
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="cancelLogout(event)">
+    <div class="bg-accent p-6 rounded-xl shadow-2xl w-full max-w-md mx-4" onclick="event.stopPropagation()">
+        <h3 class="text-2xl font-bold text-white mb-4">Confirm Logout</h3>
+        <p class="text-gray-300 mb-6">Are you sure you want to logout?</p>
+        <div class="flex justify-end gap-4">
+            <button onclick="confirmLogout()" class="bg-primary text-white px-6 py-2 rounded-full hover:bg-primary-700 font-semibold btn-primary">Yes</button>
+            <button onclick="cancelLogout()" class="bg-gray-700 text-white px-6 py-2 rounded-full hover:bg-gray-600 font-semibold">No</button>
+        </div>
+    </div>
+</div>
 
 <!-- Booking Details Modal -->
 <div id="bookingDetailsModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="closeBookingDetailsModal(event)">
@@ -188,8 +202,10 @@
         document.getElementById('logoutModal').classList.remove('hidden');
     }
 
-    function cancelLogout() {
-        document.getElementById('logoutModal').classList.add('hidden');
+    function cancelLogout(event) {
+        if (!event || event.target === document.getElementById('logoutModal')) {
+            document.getElementById('logoutModal').classList.add('hidden');
+        }
     }
 
     function confirmLogout() {
@@ -230,7 +246,7 @@
                 confirmedTbody.appendChild(row);
             });
         } else {
-            confirmedTbody.innerHTML = '<tr><td colspan="4" class="text-center text-white py-4">No confirmed bookings</td></tr>';
+            confirmedTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">No confirmed bookings</td></tr>';
         }
 
         // Populate Completed/Cancelled Bookings
@@ -241,7 +257,7 @@
                 completedCancelledTbody.appendChild(row);
             });
         } else {
-            completedCancelledTbody.innerHTML = '<tr><td colspan="5" class="text-center text-white py-4">No completed or cancelled bookings</td></tr>';
+            completedCancelledTbody.innerHTML = '<tr><td colspan="6" class="text-center text-white py-4">No completed or cancelled bookings</td></tr>';
         }
 
         <% if (errorMessage != null) { %>
@@ -269,6 +285,16 @@
         if (includeStatus) {
             row.appendChild(createCell(booking.bookingStatus));
         }
+
+        // Add View button
+        const actionTd = document.createElement('td');
+        actionTd.className = "px-6 py-4";
+        const viewButton = document.createElement('button');
+        viewButton.className = "bg-primary text-white px-4 py-1 rounded-full hover:bg-primary-700 font-semibold btn-primary";
+        viewButton.textContent = 'View';
+        viewButton.onclick = () => viewBookingDetails(booking);
+        actionTd.appendChild(viewButton);
+        row.appendChild(actionTd);
 
         return row;
     }

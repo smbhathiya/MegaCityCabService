@@ -98,9 +98,13 @@
                         <label for="pickup_location" class="block text-sm font-medium text-gray-300 mb-2">Pickup Location</label>
                         <input type="text" id="pickup_location" name="pickup_location" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white placeholder-gray-500 focus:ring-2 focus:ring-primary">
                     </div>
+
                     <div class="mb-6">
                         <label for="hire_date" class="block text-sm font-medium text-gray-300 mb-2">Hire Date</label>
-                        <input type="date" id="hire_date" name="hire_date" required class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary">
+                        <input type="date" id="hire_date" name="hire_date" required
+                               min="<%= java.time.LocalDate.now().toString() %>"
+                               value="<%= (newBooking != null && newBooking.getHireDate() != null) ? newBooking.getHireDate() : "" %>"
+                               class="w-full px-4 py-3 bg-accent border border-white/10 rounded-full text-white focus:ring-2 focus:ring-primary">
                     </div>
                     <div class="mb-6">
                         <label for="passenger_count" class="block text-sm font-medium text-gray-300 mb-2">Passenger Count</label>

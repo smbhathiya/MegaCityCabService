@@ -188,11 +188,11 @@ public class BookingServlet extends HttpServlet {
             List<Booking> bookings = null;
 
             if (bookingId != null) {
-                bookings = List.of(bookingDAO.getBookingById(bookingId));
+                bookings = List.of(bookingDAO.getBookingById(UUID.fromString(bookingId)));
             } else if (customerId != null) {
                 bookings = bookingDAO.getBookingsByCustomerId(customerId);
             } else if (driverId != null) {
-                bookings = bookingDAO.getBookingsByDriverId(driverId);
+                bookings = bookingDAO.getBookingsByDriverId(UUID.fromString(driverId));
             } else {
                 bookings = bookingDAO.getAllBookings();
             }
