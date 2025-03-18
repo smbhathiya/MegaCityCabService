@@ -124,12 +124,6 @@ public class CustomerPaymentServlet extends HttpServlet {
                 }
                 logger.info("Booking retrieved: " + booking.getBookingNumber());
 
-                if (!"pending".equals(booking.getPaymentStatus())) {
-                    logger.warning("Payment already processed or cancelled for booking: " + bookingId);
-                    response.getWriter().write(gson.toJson(new ResponseWrapper("error", "Payment already processed or cancelled")));
-                    return;
-                }
-
                 UUID paymentId = UUID.randomUUID();
                 String transactionId = "TXN-" + UUID.randomUUID().toString().substring(0, 8);
                 Payment payment = new Payment(
