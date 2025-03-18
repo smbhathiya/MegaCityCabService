@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,14 +33,11 @@ public class CarServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
         HttpSession session = request.getSession(false);
-
-        // Check admin authentication
         if (session == null || session.getAttribute("userId") == null || !"admin".equals(session.getAttribute("role"))) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Admin access required")));
             return;
         }
-
         List<Car> cars = carDAO.getAllCars();
         response.getWriter().write(gson.toJson(cars));
     }
@@ -50,8 +46,6 @@ public class CarServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
         HttpSession session = request.getSession(false);
-
-        // Check admin authentication
         if (session == null || session.getAttribute("userId") == null || !"admin".equals(session.getAttribute("role"))) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Admin access required")));
@@ -59,6 +53,7 @@ public class CarServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
+        System.out.println("Action received: " + action); // Debug log
         if (action == null) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Action parameter is required")));
@@ -82,8 +77,6 @@ public class CarServlet extends HttpServlet {
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json");
         HttpSession session = request.getSession(false);
-
-        // Check admin authentication
         if (session == null || session.getAttribute("userId") == null || !"admin".equals(session.getAttribute("role"))) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Admin access required")));
@@ -113,30 +106,61 @@ public class CarServlet extends HttpServlet {
 
     private void addCar(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            BufferedReader reader = request.getReader();
-            Car car = gson.fromJson(reader, Car.class);
+            // Log all received parameters
+            System.out.println("Received parameters:");
+            request.getParameterMap().forEach((key, value) ->
+                    System.out.println(key + ": " + String.join(",", value)));
 
-            // Validate required fields
-            if (car.getPlateNumber() == null || car.getModel() == null || car.getBrand() == null || car.getYear() == 0 || car.getColor() == null || car.getCapacity() == 0) {
+            Car car = new Car();
+            car.setId(UUID.fromString(request.getParameter("id")));
+            car.setPlateNumber(request.getParameter("plate_number"));
+            car.setModel(request.getParameter("model"));
+            car.setBrand(request.getParameter("brand"));
+            String yearStr = request.getParameter("year");
+            String capacityStr = request.getParameter("capacity");
+            car.setColor(request.getParameter("color"));
+
+            System.out.println("After setting: plate_number=" + car.getPlateNumber() +
+                    ", model=" + car.getModel() +
+                    ", brand=" + car.getBrand() +
+                    ", year=" + yearStr +
+                    ", color=" + car.getColor() +
+                    ", capacity=" + capacityStr);
+
+            if (car.getPlateNumber() == null || car.getPlateNumber().trim().isEmpty() ||
+                    car.getModel() == null || car.getModel().trim().isEmpty() ||
+                    car.getBrand() == null || car.getBrand().trim().isEmpty() ||
+                    yearStr == null || yearStr.trim().isEmpty() ||
+                    car.getColor() == null || car.getColor().trim().isEmpty() ||
+                    capacityStr == null || capacityStr.trim().isEmpty()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "All car fields are required")));
+                response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "All car fields are required and must not be empty")));
                 return;
             }
 
+            car.setYear(Integer.parseInt(yearStr.trim()));
+            car.setCapacity(Integer.parseInt(capacityStr.trim()));
             car.setId(UUID.randomUUID());
             car.setStatus("available");
             String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             car.setCreatedAt(currentTime);
             car.setUpdatedAt(currentTime);
 
+            System.out.println("Attempting to add car: " + gson.toJson(car));
             boolean success = carDAO.addCar(car);
+            System.out.println("Add car result: " + success);
+
             response.setStatus(success ? HttpServletResponse.SC_CREATED : HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("status", success ? "success" : "error");
             responseMap.put("message", success ? "Car added successfully" : "Failed to add car");
             if (success) responseMap.put("carId", car.getId().toString());
             response.getWriter().write(gson.toJson(responseMap));
+        } catch (NumberFormatException e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Invalid number format for year or capacity")));
         } catch (Exception e) {
+            e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Error adding car: " + e.getMessage())));
         }
@@ -144,22 +168,40 @@ public class CarServlet extends HttpServlet {
 
     private void updateCar(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            BufferedReader reader = request.getReader();
-            Car car = gson.fromJson(reader, Car.class);
+            Car car = new Car();
+            car.setId(UUID.fromString(request.getParameter("id")));
+            car.setPlateNumber(request.getParameter("plate_number"));
+            car.setModel(request.getParameter("model"));
+            car.setBrand(request.getParameter("brand"));
+            String yearStr = request.getParameter("year");
+            String capacityStr = request.getParameter("capacity");
+            car.setColor(request.getParameter("color"));
+            car.setStatus(request.getParameter("status"));
 
-            if (car.getId() == null) {
+            if (car.getId() == null || car.getPlateNumber() == null || car.getPlateNumber().trim().isEmpty() ||
+                    car.getModel() == null || car.getModel().trim().isEmpty() ||
+                    car.getBrand() == null || car.getBrand().trim().isEmpty() ||
+                    yearStr == null || yearStr.trim().isEmpty() ||
+                    car.getColor() == null || car.getColor().trim().isEmpty() ||
+                    capacityStr == null || capacityStr.trim().isEmpty()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Car ID is required")));
+                response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "All car fields are required and must not be empty")));
                 return;
             }
 
+            car.setYear(Integer.parseInt(yearStr.trim()));
+            car.setCapacity(Integer.parseInt(capacityStr.trim()));
             String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             car.setUpdatedAt(currentTime);
 
             boolean success = carDAO.updateCar(car);
             response.setStatus(success ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND);
             response.getWriter().write(gson.toJson(Map.of("status", success ? "success" : "error", "message", success ? "Car updated successfully" : "Car not found")));
+        } catch (NumberFormatException e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Invalid number format for year or capacity")));
         } catch (Exception e) {
+            e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(gson.toJson(Map.of("status", "error", "message", "Error updating car: " + e.getMessage())));
         }
