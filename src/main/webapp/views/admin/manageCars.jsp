@@ -27,6 +27,7 @@
     String action = request.getParameter("action");
     if ("add".equals(action)) {
         Car newCar = new Car();
+        newCar.setId(UUID.randomUUID());
         newCar.setPlateNumber(request.getParameter("plate_number"));
         newCar.setModel(request.getParameter("model"));
         newCar.setBrand(request.getParameter("brand"));
